@@ -43,7 +43,7 @@ impl Detector for CommandNotFoundDetector {
         );
         for line in full_text.lines() {
             let lower = line.to_lowercase();
-            if (lower.contains("command not found") || lower.ends_with(": not found"))
+            if (lower.contains("command not found") || lower.contains(": not found"))
                 && (lower.contains(&cmd.to_lowercase()) || ctx.execution.exit_code() == Some(127))
             {
                 let mut entities = ctx.entities.clone();

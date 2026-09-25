@@ -225,4 +225,84 @@ mod tests {
         assert_eq!(res.category, "filesystem/disk-full");
         assert_eq!(res.summary, "No space left on device.");
     }
+
+    #[test]
+    fn test_linux_gnu_cannot_access_quotes() {
+        let (exec, norm, entities) = create_test_setup(
+            "ls",
+            &["/var/log/missing"],
+            "",
+            "ls: cannot access '/var/log/missing': No such file or directory\n",
+            2,
+            None,
+        );
+        let ctx = test_context(&exec, &norm, &entities);
+        let detector = FileNotFoundDetector;
+        let res = detector.detect(&ctx).expect("must detect file not found");
+        assert_eq!(res.category, "filesystem/not-found");
+        assert_eq!(
+            res.entities.primary_path(),
+            Some(&PathBuf::from("/var/log/missing"))
+        );
+    }
+
+    #[test]
+    fn test_linux_gnu_unicode_directional_quotes() {
+        let (exec, norm, entities) = create_test_setup(
+            "cat",
+            &["/etc/missing.conf"],
+            "",
+            "cat: ‘/etc/missing.conf’: No such file or directory\n",
+            1,
+            None,
+        );
+        let ctx = test_context(&exec, &norm, &entities);
+        let detector = FileNotFoundDetector;
+        let res = detector.detect(&ctx).expect("must detect file not found");
+        assert_eq!(res.category, "filesystem/not-found");
+        assert_eq!(
+            res.entities.primary_path(),
+            Some(&PathBuf::from("/etc/missing.conf"))
+        );
+    }
+
+    #[test]
+    fn test_linux_ubuntu_dash_command_not_found() {
+        let (exec, norm, entities) = create_test_setup(
+            "sh",
+            &["-c", "bogus_app"],
+            "",
+            "sh: 1: bogus_app: not found\n",
+            127,
+            None,
+        );
+        let ctx = test_context(&exec, &norm, &entities);
+        let detector = CommandNotFoundDetector;
+        let res = detector
+            .detect(&ctx)
+            .expect("must detect command not found");
+        assert_eq!(res.category, "command/not-found");
+    }
+
+    #[test]
+    fn test_linux_gnu_mkdir_permission_denied() {
+        let (exec, norm, entities) = create_test_setup(
+            "mkdir",
+            &["/root/secret"],
+            "",
+            "mkdir: cannot create directory ‘/root/secret’: Permission denied\n",
+            1,
+            None,
+        );
+        let ctx = test_context(&exec, &norm, &entities);
+        let detector = PermissionDeniedDetector;
+        let res = detector
+            .detect(&ctx)
+            .expect("must detect permission denied");
+        assert_eq!(res.category, "filesystem/permission-denied");
+        assert_eq!(
+            res.entities.primary_path(),
+            Some(&PathBuf::from("/root/secret"))
+        );
+    }
 }

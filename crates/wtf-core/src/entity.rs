@@ -25,13 +25,17 @@ static BIND_ERROR_PORT_REGEX: LazyLock<Regex> = LazyLock::new(|| {
 });
 
 static UNIX_ERROR_PATH_REGEX: LazyLock<Regex> = LazyLock::new(|| {
-    // Matches e.g. "cat: /foo/bar: No such file or directory" or "cannot open '/path/to/file': Permission denied"
-    Regex::new(r#"(?:^|[a-zA-Z0-9_\-\.]+:\s*(?:cannot\s+(?:open|access|stat)\s+)?)(?:'|"|`|\\")?([/~][a-zA-Z0-9_\-./]+)(?:'|"|`|\\")?:\s*(?:No such file|Permission denied|Is a directory|Not a directory|File exists)"#)
+    // Matches GNU and BSD utilities:
+    // "cat: /foo/bar: No such file or directory"
+    // "ls: cannot access '/foo/bar': No such file or directory"
+    // "cat: ‘/foo/bar’: No such file or directory"
+    // "rm: cannot remove '/foo/bar': Permission denied"
+    Regex::new(r#"(?:^|[a-zA-Z0-9_\-\.]+:\s*(?:cannot\s+[a-zA-Z]+\s+)?)(?:['"`\\‘“])?([/~][a-zA-Z0-9_\-./]+)(?:['"`\\’”:])?:\s*(?:No such file|Permission denied|Is a directory|Not a directory|File exists)"#)
         .expect("valid unix error path regex")
 });
 
 static QUOTED_PATH_REGEX: LazyLock<Regex> = LazyLock::new(|| {
-    Regex::new(r#"['"`\\]([/~.][a-zA-Z0-9_\-./]+)['"`\\]"#).expect("valid quoted path regex")
+    Regex::new(r#"['"`\\‘“]([/~.][a-zA-Z0-9_\-./]+)['"`\\’”]"#).expect("valid quoted path regex")
 });
 
 static UNQUOTED_ABSOLUTE_PATH_REGEX: LazyLock<Regex> = LazyLock::new(|| {
@@ -252,9 +256,9 @@ impl EntityExtractor {
     }
 
     fn sanitize_path(raw: &str) -> Option<PathBuf> {
-        let trimmed = raw
-            .trim()
-            .trim_matches(['\'', '"', '`', '\\', ':', ';', ',', '(', ')', '[', ']']);
+        let trimmed = raw.trim().trim_matches([
+            '\'', '"', '`', '\\', ':', ';', ',', '(', ')', '[', ']', '‘', '’', '“', '”',
+        ]);
         if trimmed.is_empty() {
             return None;
         }
