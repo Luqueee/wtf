@@ -436,6 +436,16 @@ record exit code
 
 When a command fails, WTF temporarily retains information about that execution.
 
+### Phase 3 behavior
+
+Run `wtf install` from an interactive Bash, Zsh, or Fish session, then start a new shell. The installer adds a marked hook to `~/.bashrc` or `${ZDOTDIR:-$HOME}/.zshrc`, or creates `${XDG_CONFIG_HOME:-$HOME/.config}/fish/conf.d/wtf.fish`. Repeating the install is safe; `wtf uninstall` removes only its own hook. The parent process selects the active shell when recognizable, otherwise `$SHELL` is used.
+
+After a failed command, run `wtf` to diagnose the last failure; `wtf --verbose` includes captured metadata and investigation details, and `wtf --json` emits structured output. Successful commands and WTF invocations do not replace the last failure. If no valid recent failure exists, WTF reports that fact instead. `wtf -- <command>` remains the explicit execution mode and captures that command's stdout and stderr.
+
+Hooks record only a bounded, redacted command line, working directory, exit code, start/finish timestamps, and shell name. The single atomic JSON record lives at `$XDG_RUNTIME_DIR/wtf/last-failure.json` when the runtime directory is secure; Linux `/run/user/$UID`, private `$HOME/.cache/wtf`, and a private temporary directory are fallbacks. The WTF directory is mode `0700`, the file mode `0600`, and records expire after 15 minutes by default (`WTF_FAILURE_TTL_SECS` overrides the lifetime). Unsafe ownership, permissions, links, missing files, malformed data, and expired records are ignored. Multiline or heredoc commands are not recorded, and common credentials, headers, URLs, and payload arguments are redacted; avoid entering secrets in arbitrary command arguments because no parser can recognize every secret.
+
+Shell hooks do **not** retain stdout or stderr and never launch a diagnosis or probe automatically. Output-dependent detectors therefore have less evidence than in explicit execution mode; metadata-only network failures may still trigger safe local probes. `--show-output` cannot recover output from shell history. Bash, Zsh, and Fish hooks require their interactive startup configuration and a usable `wtf` executable; Fish event hooks require an interactive terminal.
+
 ---
 
 # 11. Error Normalizer

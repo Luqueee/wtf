@@ -1,9 +1,14 @@
 use std::io::IsTerminal;
 use std::process::ExitCode;
 
-use clap::Parser;
-use wtf_core::capture::{execute_command, ExecutionConfig};
-use wtf_core::diagnosis::{DiagnosisEngine, DiagnosisStatus, RenderOptions};
+use clap::{Parser, Subcommand};
+use wtf_core::capture::{execute_command, CommandExecution, ExecutionConfig};
+use wtf_core::diagnosis::{Diagnosis, DiagnosisEngine, DiagnosisStatus, RenderOptions};
+use wtf_core::investigation::{Investigation, InvestigationEngine};
+use wtf_core::probes::LocalProbeRunner;
+
+mod shell_install;
+mod shell_state;
 
 #[derive(Parser, Debug)]
 #[command(
@@ -30,26 +35,74 @@ struct Cli {
     #[arg(long)]
     fix: bool,
 
+    /// Include investigation hypotheses, probes, evidence, and captured metadata
+    #[arg(long)]
+    verbose: bool,
+
     /// Command and arguments to execute and diagnose
-    #[arg(last = true, required = true)]
+    #[arg(last = true)]
     command: Vec<String>,
+
+    #[command(subcommand)]
+    action: Option<Action>,
+}
+
+#[derive(Subcommand, Debug)]
+enum Action {
+    Install,
+    Uninstall,
+    #[command(name = "__record", hide = true)]
+    Record {
+        shell: String,
+        exit_code: i32,
+        start_epoch_seconds: u64,
+        finish_epoch_seconds: u64,
+        cwd: String,
+        #[arg(allow_hyphen_values = true)]
+        command_line: String,
+    },
 }
 
 fn main() -> ExitCode {
     let cli = Cli::parse();
 
-    if cli.command.is_empty() {
-        eprintln!("Error: no command provided to execute.\nUsage: wtf -- <command> [args...]");
-        return ExitCode::from(2);
+    match cli.action {
+        Some(Action::Install) => return shell_command(shell_install::install()),
+        Some(Action::Uninstall) => return shell_command(shell_install::uninstall()),
+        Some(Action::Record {
+            shell,
+            exit_code,
+            start_epoch_seconds,
+            finish_epoch_seconds,
+            cwd,
+            command_line,
+        }) => {
+            // Recording is best-effort: it must never change the status of the shell command.
+            let _ = shell_state::record_failure(
+                &command_line,
+                &cwd,
+                exit_code,
+                start_epoch_seconds,
+                finish_epoch_seconds,
+                &shell,
+            );
+            return ExitCode::SUCCESS;
+        }
+        None => {}
     }
 
-    let cmd = &cli.command[0];
-    let args = &cli.command[1..];
+    let explicit_command = !cli.command.is_empty();
+    let execution = if explicit_command {
+        let cmd = &cli.command[0];
+        execute_command(cmd, &cli.command[1..], &ExecutionConfig::default())
+    } else if let Some(execution) = shell_state::load_recent() {
+        execution
+    } else {
+        println!("No recent failed command found.");
+        return ExitCode::from(1);
+    };
 
-    let config = ExecutionConfig::default();
-    let execution = execute_command(cmd, args, &config);
-
-    if cli.show_output {
+    if explicit_command && cli.show_output && !cli.json {
         if !execution.stdout.is_empty() {
             print!("{}", execution.stdout);
         }
@@ -58,45 +111,91 @@ fn main() -> ExitCode {
         }
     }
 
-    let engine = DiagnosisEngine::new();
-    let diagnosis = engine.diagnose(&execution);
-
-    if cli.json {
-        let json_str = serde_json::to_string_pretty(&diagnosis)
-            .unwrap_or_else(|e| format!("{{\"error\": \"Failed to serialize: {e}\"}}"));
-        println!("{json_str}");
-    } else {
-        // If command succeeded and --show-output was not used, print stdout if present
-        if diagnosis.status == DiagnosisStatus::Success && !cli.show_output {
-            if !execution.stdout.is_empty() {
-                print!("{}", execution.stdout);
-            }
-            if !execution.stderr.is_empty() {
-                eprint!("{}", execution.stderr);
-            }
-        } else {
-            let use_color = !cli.no_color
-                && std::io::stdout().is_terminal()
-                && std::env::var_os("NO_COLOR").is_none();
-
-            let render_options = RenderOptions {
-                color: use_color,
-                show_fix: cli.fix,
-            };
-
-            let rendered = DiagnosisEngine::render(&diagnosis, &render_options);
-            print!("{rendered}");
-        }
-    }
+    let (diagnosis, investigation) = diagnose(&execution);
+    render_result(&execution, &diagnosis, investigation.as_ref(), &cli);
 
     match diagnosis.exit_status.code {
-        Some(code) => {
-            // Normal process exit
-            ExitCode::from((code & 0xFF) as u8)
+        Some(code) => ExitCode::from((code & 0xFF) as u8),
+        None => ExitCode::from(1),
+    }
+}
+
+fn shell_command(result: Result<String, String>) -> ExitCode {
+    match result {
+        Ok(message) => {
+            println!("{message}");
+            ExitCode::SUCCESS
         }
-        None => {
-            // Process terminated by signal
+        Err(error) => {
+            eprintln!("{error}");
             ExitCode::from(1)
         }
+    }
+}
+
+fn diagnose(execution: &CommandExecution) -> (Diagnosis, Option<Investigation>) {
+    let diagnosis = DiagnosisEngine::new().diagnose(execution);
+    let investigation = if diagnosis.status == DiagnosisStatus::Success {
+        None
+    } else {
+        Some(InvestigationEngine::new(LocalProbeRunner).investigate(execution, &diagnosis))
+    };
+    (diagnosis, investigation)
+}
+
+fn render_result(
+    execution: &CommandExecution,
+    diagnosis: &Diagnosis,
+    investigation: Option<&Investigation>,
+    cli: &Cli,
+) {
+    if cli.json {
+        #[derive(serde::Serialize)]
+        struct JsonOutput<'a> {
+            #[serde(flatten)]
+            diagnosis: &'a Diagnosis,
+            investigation: Option<&'a Investigation>,
+        }
+
+        let output = JsonOutput {
+            diagnosis,
+            investigation,
+        };
+        let json_str = serde_json::to_string_pretty(&output)
+            .unwrap_or_else(|e| format!("{{\"error\": \"Failed to serialize: {e}\"}}"));
+        println!("{json_str}");
+        return;
+    }
+
+    if diagnosis.status == DiagnosisStatus::Success && !cli.show_output {
+        if !execution.stdout.is_empty() {
+            print!("{}", execution.stdout);
+        }
+        if !execution.stderr.is_empty() {
+            eprint!("{}", execution.stderr);
+        }
+    } else if let Some(investigation) = investigation {
+        if cli.verbose {
+            println!(
+                "Captured command: {}\nWorking directory: {}\nExit code: {}\nDuration: {:?}",
+                execution.full_command(),
+                execution.cwd.display(),
+                execution.exit_status.code.map_or_else(
+                    || "terminated by signal".to_string(),
+                    |code| code.to_string()
+                ),
+                execution.duration
+            );
+        }
+        let use_color = !cli.no_color
+            && std::io::stdout().is_terminal()
+            && std::env::var_os("NO_COLOR").is_none();
+
+        let render_options = RenderOptions {
+            color: use_color,
+            show_fix: cli.fix,
+        };
+        let rendered = investigation.render(diagnosis, &render_options, cli.verbose);
+        print!("{rendered}");
     }
 }
