@@ -446,6 +446,12 @@ Hooks record only a bounded, redacted command line, working directory, exit code
 
 Shell hooks do **not** retain stdout or stderr and never launch a diagnosis or probe automatically. Output-dependent detectors therefore have less evidence than in explicit execution mode; metadata-only network failures may still trigger safe local probes. `--show-output` cannot recover output from shell history. Bash, Zsh, and Fish hooks require their interactive startup configuration and a usable `wtf` executable; Fish event hooks require an interactive terminal.
 
+### Phase 4 behavior
+
+For output-free shell failures, `wtf` selects a built-in diagnostic adapter by executable basename (including absolute paths). Cargo, Git, curl, and Docker adapters reconstruct current evidence through the existing bounded, fixed-argv probe catalogue; the original action is never replayed. Explicit `wtf -- <command>` continues to use captured output and the existing detectors. Normal output shows the finding, supported cause (or unknown), and concise evidence; `--verbose` additionally lists the selected adapter, probe attempts, and hypotheses. JSON retains the original diagnosis shape and adds optional investigation adapter metadata.
+
+Cargo checks compilation offline with structured rustc JSON only for plain `build`, `check`, `test`, or `run` in simple local packages without detected build scripts, procedural macros, or workspaces; flags/package selection and passing checks do not explain a failed test or run. Dependency build scripts and proc macros can still execute, and `cargo check` writes build artifacts: do not treat it as read-only in untrusted projects. Git reads porcelain status, branch, upstream, and remote **names** (never remote URLs) without invoking push/pull/merge/rebase/commit; upstream diagnosis requires a committed branch and a configured remote. Curl never reissues HTTP requests, regardless of method; it inspects local listeners or host resolution instead. Docker reads state and bounded logs only for an explicit `docker run --name` container whose creation time matches the failed command; it never starts or runs containers. Docker image entities skip known option values, and unknown option forms remain unclassified rather than being mislabeled as an image. Docker API connection errors are reported as daemon unavailable without claiming a confirmed root cause. Invalid output, unavailable tools, timeouts, and unsupported variants yield an unconfirmed cause rather than a fabricated explanation. Probe output is transient and is never persisted by the shell hook.
+
 ---
 
 # 11. Error Normalizer
@@ -1148,6 +1154,57 @@ expected diagnosis
 ```
 
 This allows the diagnostic system to be regression-tested.
+
+## Executable local E2E scenarios
+
+The VM-free suite installs `wtf` under a temporary root and exercises its
+interactive Bash hook with a temporary HOME and XDG directories. Cargo builds
+a dependency-free crate with a type error, Git pushes a local repository
+without an upstream, and curl connects to an unbound loopback port. Each case
+checks the failed command's diagnosis and then verifies a local correction.
+
+```sh
+bash scripts/e2e.sh quick
+bash scripts/e2e.sh quick cargo_build_failure
+```
+
+The Makefile wraps the same workflows:
+
+```sh
+make help
+make build
+make check
+make test
+make fmt-check
+make lint
+make e2e
+make e2e E2E_FILTER=cargo_build_failure
+```
+
+Use `make fmt` to format Rust sources. `make test` leaves Docker E2E ignored.
+
+The runner installs and tests offline; run `cargo fetch --locked` first if the
+Cargo dependency cache is empty. The WTF hook and fixtures write under their
+temporary HOME and XDG directories, not the user's shell startup files.
+Rustup's installed toolchain and the workspace build cache remain shared.
+
+Docker is deliberately excluded from `quick` and ignored by ordinary
+`cargo test`. On a host with a running local Unix-socket Docker context and a
+cached `busybox:latest` image, explicitly opt in:
+
+```sh
+bash scripts/e2e.sh docker
+bash scripts/e2e.sh all
+```
+
+Equivalent opt-in Make targets are `make e2e-docker` and `make e2e-all`.
+
+This uses the host's **shared daemon**, not an isolated VM. It pins Docker
+commands to that local socket, disables pulls and container networking, and
+creates two uniquely named containers tagged `wtf.e2e.owner`. Cleanup
+inspects that label and removes only its matching container IDs. Other daemon
+resources are never pruned or removed. Obtain authorization before running
+this scenario against a shared daemon.
 
 ---
 

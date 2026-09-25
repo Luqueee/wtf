@@ -31,6 +31,12 @@ pub enum ProbeId {
     DockerLogs,
     GitStatus,
     GitDiff,
+    CargoCheck,
+    GitPorcelain,
+    GitBranch,
+    GitUpstream,
+    GitTopLevel,
+    GitRemote,
 }
 
 /// Only this closed catalogue constructs commands for automatic execution.
@@ -189,6 +195,51 @@ impl ProbeSpec {
                 vec!["diff".into(), "--no-ext-diff".into(), "--stat".into()],
                 "changes",
             ),
+            ProbeId::CargoCheck => (
+                "Rust compile diagnostics",
+                "cargo",
+                vec![
+                    "check".into(),
+                    "--offline".into(),
+                    "--message-format=json".into(),
+                ],
+                "compiler-diagnostic",
+            ),
+            ProbeId::GitPorcelain => (
+                "repository conflicts and branch status",
+                "git",
+                vec!["status".into(), "--porcelain=v2".into(), "--branch".into()],
+                "git-status",
+            ),
+            ProbeId::GitBranch => (
+                "current branch",
+                "git",
+                vec!["branch".into(), "--show-current".into()],
+                "git-branch",
+            ),
+            ProbeId::GitUpstream => (
+                "configured upstream",
+                "git",
+                vec![
+                    "rev-parse".into(),
+                    "--abbrev-ref".into(),
+                    "--symbolic-full-name".into(),
+                    "@{u}".into(),
+                ],
+                "git-upstream",
+            ),
+            ProbeId::GitTopLevel => (
+                "repository root",
+                "git",
+                vec!["rev-parse".into(), "--show-toplevel".into()],
+                "git-root",
+            ),
+            ProbeId::GitRemote => (
+                "configured remote names",
+                "git",
+                vec!["remote".into()],
+                "git-remote",
+            ),
         };
         let useful_for: &'static [&'static str] = match id {
             ProbeId::Listeners => &["port_owner", "no_local_listener"],
@@ -201,6 +252,12 @@ impl ProbeSpec {
             }
             ProbeId::DockerLogs => &["missing_env", "container_exited"],
             ProbeId::GitStatus | ProbeId::GitDiff => &["recent_changes"],
+            ProbeId::CargoCheck => &["rust_compile_error"],
+            ProbeId::GitPorcelain
+            | ProbeId::GitBranch
+            | ProbeId::GitUpstream
+            | ProbeId::GitTopLevel
+            | ProbeId::GitRemote => &["git_context"],
         };
         Some(Self {
             id,
@@ -208,7 +265,11 @@ impl ProbeSpec {
             program,
             args,
             cwd: cwd.to_path_buf(),
-            timeout: Duration::from_millis(500),
+            timeout: if id == ProbeId::CargoCheck {
+                Duration::from_secs(12)
+            } else {
+                Duration::from_millis(500)
+            },
             safety: ProbeSafety::Safe,
             evidence_kind,
             useful_for,
@@ -315,7 +376,11 @@ impl ProbeRunner for LocalProbeRunner {
             spec.program,
             &spec.args,
             &spec.cwd,
-            spec.timeout.min(Duration::from_millis(500)),
+            spec.timeout.min(if spec.id == ProbeId::CargoCheck {
+                Duration::from_secs(12)
+            } else {
+                Duration::from_millis(500)
+            }),
         )
     }
 }
@@ -343,8 +408,13 @@ fn run_bounded(
     let stderr = child.stderr.take().expect("piped stderr");
     let (out_tx, out_rx) = mpsc::sync_channel(1);
     let (err_tx, err_rx) = mpsc::sync_channel(1);
+    let stdout_limit = if program == "cargo" {
+        128 * 1024
+    } else {
+        16 * 1024
+    };
     thread::spawn(move || {
-        let _ = out_tx.send(drain_stream_bounded(stdout, 16 * 1024));
+        let _ = out_tx.send(drain_stream_bounded(stdout, stdout_limit));
     });
     thread::spawn(move || {
         let _ = err_tx.send(drain_stream_bounded(stderr, 4 * 1024));

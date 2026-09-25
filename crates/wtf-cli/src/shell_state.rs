@@ -355,6 +355,7 @@ fn redact_and_bound(line: &str, limit: usize) -> String {
             || key == "form"
             || key == "form-string";
         let sensitive = payload_flag
+            || matches!(key, "env" | "build-arg")
             || [
                 "password",
                 "passwd",
@@ -396,7 +397,10 @@ fn redact_and_bound(line: &str, limit: usize) -> String {
                 redact_next = if key == "authorization" { 2 } else { 1 };
                 raw.to_string()
             }
-        } else if value == "-H" || value == "--header" {
+        } else if matches!(
+            value.as_str(),
+            "-H" | "--header" | "-e" | "--env" | "--env-file" | "--build-arg"
+        ) {
             redact_next = 1;
             raw.to_string()
         } else if value.contains("://") {
@@ -642,6 +646,23 @@ mod tests {
         ] {
             assert!(!persisted.contains(secret), "{persisted}");
         }
+    }
+
+    #[test]
+    fn docker_environment_values_are_not_stored_in_shell_records() {
+        let safe = redact_and_bound(
+            "docker run --name api -e DATABASE_URL=postgres-value --env API_ENDPOINT=private-value --env=ANOTHER=value --build-arg BUILD_TOKEN=build-value image",
+            MAX_COMMAND_LINE,
+        );
+        for secret in [
+            "postgres-value",
+            "private-value",
+            "ANOTHER=value",
+            "build-value",
+        ] {
+            assert!(!safe.contains(secret), "{safe}");
+        }
+        assert!(safe.contains("--name api"));
     }
 
     #[test]

@@ -358,3 +358,48 @@ fn git_changes_are_not_claimed_to_cause_an_unrelated_failure() {
         [ProbeId::GitStatus, ProbeId::GitDiff]
     );
 }
+
+#[test]
+fn shell_cargo_compiler_diagnostic_reaches_existing_diagnosis_and_evidence() {
+    let project = tempfile::tempdir().unwrap();
+    std::fs::write(
+        project.path().join("Cargo.toml"),
+        "[package]\nname=\"probe-fixture\"\nversion=\"0.1.0\"\nedition=\"2021\"\n",
+    )
+    .unwrap();
+    let mut execution = failed("/usr/bin/cargo", &["build"], "");
+    execution.cwd = project.path().into();
+    let mut diagnosis = DiagnosisEngine::new().diagnose(&execution);
+    let compiler = serde_json::json!({
+        "reason": "compiler-message",
+        "message": {
+            "level": "error",
+            "message": "mismatched types",
+            "code": {"code": "E0308"},
+            "spans": [{"file_name": "src/api.rs", "line_start": 84, "column_start": 9, "is_primary": true}]
+        }
+    });
+    let output = format!("{compiler}\n");
+    let mut fixture = FixtureRunner::new(&["cargo"], &[]);
+    fixture.output.insert(
+        ProbeId::CargoCheck,
+        ProbeOutput {
+            stdout: output,
+            stderr: String::new(),
+            exit_code: Some(101),
+            truncated: false,
+        },
+    );
+    let report =
+        InvestigationEngine::new(fixture).investigate_reconstructed(&execution, &mut diagnosis);
+    assert_eq!(diagnosis.summary, "Rust compilation failed.");
+    assert!(report
+        .root_cause
+        .as_deref()
+        .is_some_and(|s| s.contains("src/api.rs:84")));
+    assert!(report
+        .evidence
+        .iter()
+        .any(|e| e.observation.contains("E0308")));
+    assert_eq!(report.adapter, Some("cargo"));
+}

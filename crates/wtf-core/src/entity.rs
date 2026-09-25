@@ -305,24 +305,55 @@ impl EntityExtractor {
             if let Some(sub) = exec.args.first() {
                 match sub.as_str() {
                     "run" => {
-                        // Find the image argument (last positional arg or after flags)
-                        let mut non_flags: Vec<&String> = Vec::new();
-                        let mut skip_next = false;
-                        for arg in exec.args.iter().skip(1) {
-                            if skip_next {
-                                skip_next = false;
+                        // Only consume known option values; an unknown option leaves the
+                        // image ambiguous, so do not report a container in that case.
+                        let mut args = exec.args.iter().skip(1);
+                        while let Some(arg) = args.next() {
+                            if arg == "--" {
+                                if let Some(image) = args.next() {
+                                    entities.containers.push(image.clone());
+                                }
+                                break;
+                            }
+                            if matches!(
+                                arg.as_str(),
+                                "-p" | "--publish"
+                                    | "-v"
+                                    | "--volume"
+                                    | "-e"
+                                    | "--env"
+                                    | "--env-file"
+                                    | "--name"
+                                    | "--network"
+                                    | "--pull"
+                                    | "--label"
+                                    | "--platform"
+                                    | "-w"
+                                    | "--workdir"
+                                    | "-u"
+                                    | "--user"
+                                    | "--entrypoint"
+                                    | "--restart"
+                            ) {
+                                if args.next().is_none() {
+                                    break;
+                                }
                                 continue;
                             }
-                            if arg == "-p" || arg == "-v" || arg == "-e" || arg == "--name" {
-                                skip_next = true;
+                            if matches!(
+                                arg.as_str(),
+                                "-d" | "--detach" | "-i" | "-t" | "-it" | "--rm"
+                            ) || arg.starts_with("--") && arg.contains('=')
+                                || ["-p", "-v", "-e"]
+                                    .iter()
+                                    .any(|flag| arg.starts_with(flag) && arg.len() > flag.len())
+                            {
                                 continue;
                             }
                             if !arg.starts_with('-') {
-                                non_flags.push(arg);
+                                entities.containers.push(arg.clone());
                             }
-                        }
-                        if let Some(img) = non_flags.first() {
-                            entities.containers.push((*img).clone());
+                            break;
                         }
                     }
                     "stop" | "start" | "restart" | "rm" | "logs" | "exec" => {
@@ -400,6 +431,32 @@ mod tests {
         let entities = EntityExtractor::extract(&exec, &norm);
         assert_eq!(entities.primary_port(), Some(8080));
         assert_eq!(entities.primary_container(), Some("nginx"));
+    }
+
+    #[test]
+    fn docker_run_options_are_not_mistaken_for_the_image() {
+        let (exec, norm) = make_exec(
+            "docker",
+            &[
+                "run",
+                "--name",
+                "wtf-test",
+                "--network",
+                "none",
+                "--pull",
+                "never",
+                "--label",
+                "wtf.phase4.test=true",
+                "busybox:latest",
+                "sh",
+                "-c",
+                "exit 42",
+            ],
+            "",
+            "",
+        );
+        let entities = EntityExtractor::extract(&exec, &norm);
+        assert_eq!(entities.primary_container(), Some("busybox:latest"));
     }
 
     #[test]

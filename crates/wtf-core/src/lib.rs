@@ -1,3 +1,4 @@
+pub mod adapters;
 pub mod capture;
 pub mod detectors;
 pub mod diagnosis;

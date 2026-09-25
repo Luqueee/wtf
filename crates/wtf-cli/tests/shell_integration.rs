@@ -586,6 +586,26 @@ fn interactive_shell_hooks_preserve_nonzero_exit_and_recent_failure() {
 }
 
 #[test]
+fn bash_hook_keeps_failed_commands_with_wtf_in_an_argument() {
+    let isolated = IsolatedShell::new(Shell::Bash);
+    isolated.install();
+    let script = format!(
+        "sh -c 'echo wtf.e2e.owner >&2; exit 42'\nwtf --json > {}\nexit 0\n",
+        shell_quote(&isolated.json_path())
+    );
+    let output = isolated.run(&script);
+    assert!(output.status.success(), "Bash session failed: {output:?}");
+    let json = isolated.read_json(&isolated.json_path(), &output);
+    assert_eq!(json["exit_status"]["code"], 42, "{json}");
+    assert!(
+        json["command"]
+            .as_str()
+            .is_some_and(|command| command.contains("wtf.e2e.owner")),
+        "the failed command should remain available: {json}"
+    );
+}
+
+#[test]
 fn interactive_shell_wtf_does_not_replace_the_recent_failure() {
     for shell in available_shells() {
         let isolated = IsolatedShell::new(shell);

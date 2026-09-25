@@ -134,11 +134,14 @@ fn shell_command(result: Result<String, String>) -> ExitCode {
 }
 
 fn diagnose(execution: &CommandExecution) -> (Diagnosis, Option<Investigation>) {
-    let diagnosis = DiagnosisEngine::new().diagnose(execution);
+    let mut diagnosis = DiagnosisEngine::new().diagnose(execution);
     let investigation = if diagnosis.status == DiagnosisStatus::Success {
         None
     } else {
-        Some(InvestigationEngine::new(LocalProbeRunner).investigate(execution, &diagnosis))
+        Some(
+            InvestigationEngine::new(LocalProbeRunner)
+                .investigate_reconstructed(execution, &mut diagnosis),
+        )
     };
     (diagnosis, investigation)
 }

@@ -6,6 +6,7 @@ use regex::Regex;
 use serde::Serialize;
 use serde_json::Value;
 
+use crate::adapters::{self, AdapterContext, AdapterResult, Finding};
 use crate::capture::CommandExecution;
 use crate::diagnosis::{Diagnosis, RenderOptions};
 use crate::probes::{ProbeId, ProbeOutput, ProbeRunner, ProbeSpec};
@@ -47,6 +48,10 @@ pub struct Investigation {
     pub hypotheses: Vec<Hypothesis>,
     pub attempts: Vec<ProbeAttempt>,
     pub remedy: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub adapter: Option<&'static str>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub reconstruction_note: Option<String>,
 }
 
 impl Investigation {
@@ -90,7 +95,175 @@ impl Investigation {
         });
     }
 
+    fn apply_finding(&mut self, finding: Finding, diagnosis: &mut Diagnosis) {
+        let (hypothesis, category, summary, root) = match finding {
+            Finding::CargoError {
+                code,
+                message,
+                file,
+                line,
+                column,
+            } => {
+                let location = format!("{}:{line}:{column}", safe_observation(&file));
+                let detail = safe_observation(&message);
+                let code = code.map(|code| safe_observation(&code));
+                self.record(
+                    ProbeId::CargoCheck,
+                    format!(
+                        "{}: {detail} at {location}",
+                        code.as_deref().unwrap_or("error")
+                    ),
+                );
+                (
+                    "rust_compile_error",
+                    "compilation/rust",
+                    "Rust compilation failed.".to_string(),
+                    Some(format!("{detail} in {location}.")),
+                )
+            }
+            Finding::GitNoUpstream { branch } => (
+                "git_no_upstream",
+                "git/upstream",
+                "Git push failed.".into(),
+                Some(format!(
+                    "Branch {} has no upstream configured.",
+                    safe_observation(&branch)
+                )),
+            ),
+            Finding::GitDetached => (
+                "git_detached",
+                "git/detached",
+                "Git operation failed.".into(),
+                Some("HEAD is detached; no branch is checked out.".into()),
+            ),
+            Finding::GitConflicts => (
+                "git_conflicts",
+                "git/conflicts",
+                "Git operation failed.".into(),
+                Some("Unresolved merge conflicts are present.".into()),
+            ),
+            Finding::CurlNoListener { port } => {
+                if !diagnosis.entities.ports.contains(&port) {
+                    diagnosis.entities.ports.insert(0, port);
+                }
+                self.candidate("no_local_listener");
+                self.support(
+                    "no_local_listener",
+                    &format!("no listener on :{port}"),
+                    false,
+                );
+                diagnosis.category = Some("network/no-local-listener".into());
+                diagnosis.summary = format!("Nothing is listening on port {port}.");
+                diagnosis.status = crate::diagnosis::DiagnosisStatus::Likely;
+                return;
+            }
+            Finding::CurlDnsFailure { host } => {
+                self.record(
+                    ProbeId::Hosts,
+                    format!("{} does not resolve", safe_observation(&host)),
+                );
+                (
+                    "dns_resolution",
+                    "network/dns",
+                    "DNS lookup failed.".into(),
+                    None,
+                )
+            }
+            Finding::DockerExited { name, code, oom } => {
+                let name = safe_observation(&name);
+                let root = if oom {
+                    format!("Container \"{name}\" was killed by the OOM killer.")
+                } else {
+                    format!("Container \"{name}\" exited with status {code}.")
+                };
+                (
+                    "container_exited",
+                    "container/exited",
+                    "Docker container is not running.".into(),
+                    Some(root),
+                )
+            }
+            Finding::DockerMissingEnv { name, variable } => {
+                let name = safe_observation(&name);
+                let variable = safe_observation(&variable);
+                (
+                    "missing_env",
+                    "container/configuration",
+                    "Docker container failed to start.".into(),
+                    Some(format!("Container \"{name}\" requires {variable}.")),
+                )
+            }
+            Finding::DockerDaemonUnavailable => (
+                "docker_daemon",
+                "container/daemon",
+                "Docker daemon is unavailable.".into(),
+                None,
+            ),
+        };
+        diagnosis.category = Some(category.into());
+        diagnosis.summary = summary;
+        if let Some(root) = root {
+            self.candidate(hypothesis);
+            self.support(hypothesis, &root, true);
+            self.root_cause = Some(root);
+            diagnosis.status = crate::diagnosis::DiagnosisStatus::Confirmed;
+        }
+    }
+
     pub fn render(&self, diagnosis: &Diagnosis, options: &RenderOptions, verbose: bool) -> String {
+        if let Some(adapter) = self.adapter {
+            let icon = if diagnosis.status == crate::diagnosis::DiagnosisStatus::Confirmed {
+                "✗"
+            } else {
+                "?"
+            };
+            let mut out = format!("{icon} {}\n", diagnosis.summary);
+            if let Some(root) = &self.root_cause {
+                out.push_str(&format!("\nRoot cause:\n  {root}\n"));
+            } else {
+                out.push_str("\nRoot cause not confirmed.\n");
+            }
+            if !self.evidence.is_empty() {
+                out.push_str("\nEvidence:\n");
+                for evidence in &self.evidence {
+                    out.push_str(&format!(
+                        "  {} → {}\n",
+                        evidence.source, evidence.observation
+                    ));
+                }
+            }
+            if let Some(note) = &self.reconstruction_note {
+                out.push_str(&format!("\n{note}\n"));
+            }
+            if options.show_fix {
+                if let Some(remedy) = &self.remedy {
+                    out.push_str(&format!("\nFix:\n  {remedy}\n"));
+                }
+            }
+            if verbose {
+                out.push_str(&format!("\nAdapter: {adapter}\nProbes:\n"));
+                for attempt in &self.attempts {
+                    out.push_str(&format!(
+                        "  {} → {}\n",
+                        probe_label(attempt.probe),
+                        attempt.result
+                    ));
+                }
+                out.push_str("\nHypotheses:\n");
+                for hypothesis in &self.hypotheses {
+                    out.push_str(&format!(
+                        "  {} {:?} ({:.0}%)\n",
+                        hypothesis.id,
+                        hypothesis.status,
+                        hypothesis.confidence * 100.0
+                    ));
+                }
+                if self.attempts.len() >= 5 {
+                    out.push_str("Investigation stopped at probe budget.\n");
+                }
+            }
+            return out;
+        }
         let base_options = RenderOptions {
             color: options.color,
             show_fix: options.show_fix && self.remedy.is_none(),
@@ -141,6 +314,14 @@ impl Investigation {
     }
 }
 
+fn safe_observation(value: &str) -> String {
+    value
+        .chars()
+        .filter(|ch| !ch.is_control())
+        .take(300)
+        .collect()
+}
+
 fn probe_label(id: ProbeId) -> &'static str {
     match id {
         ProbeId::Listeners => {
@@ -168,6 +349,12 @@ fn probe_label(id: ProbeId) -> &'static str {
         ProbeId::DockerLogs => "docker logs",
         ProbeId::GitStatus => "git status",
         ProbeId::GitDiff => "git diff",
+        ProbeId::CargoCheck => "cargo check",
+        ProbeId::GitPorcelain => "git status --porcelain=v2 --branch",
+        ProbeId::GitBranch => "git branch --show-current",
+        ProbeId::GitUpstream => "git rev-parse @{u}",
+        ProbeId::GitTopLevel => "git rev-parse --show-toplevel",
+        ProbeId::GitRemote => "git remote -v",
     }
 }
 
@@ -249,6 +436,67 @@ impl<R: ProbeRunner> InvestigationEngine<R> {
             },
         });
         output.ok()
+    }
+
+    /// Reconstruct output-free shell failures without replaying the failed action.
+    /// The existing investigation remains the owner of hypotheses and evidence.
+    pub fn investigate_reconstructed(
+        &self,
+        execution: &CommandExecution,
+        diagnosis: &mut Diagnosis,
+    ) -> Investigation {
+        if adapters::select(execution).is_none() {
+            return self.investigate(execution, diagnosis);
+        }
+        let budget = if adapters::select(execution) == Some("cargo") {
+            self.max_duration.max(Duration::from_secs(12))
+        } else {
+            self.max_duration
+        };
+        let deadline = Instant::now() + budget;
+        let mut context =
+            AdapterContext::new(&self.runner, &execution.cwd, self.max_probes, budget);
+        let Some((adapter, finding)) = adapters::collect(execution, &mut context) else {
+            return self.investigate(execution, diagnosis);
+        };
+        let mut result = Investigation {
+            adapter: Some(adapter),
+            attempts: context.attempts,
+            ..Investigation::default()
+        };
+        let AdapterResult {
+            evidence,
+            finding,
+            note,
+        } = finding;
+        for item in evidence {
+            result.record(item.probe, safe_observation(&item.observation));
+        }
+        result.reconstruction_note = note.map(|text| safe_observation(&text));
+        if let Some(finding) = finding {
+            result.apply_finding(finding, diagnosis);
+        }
+        if result.root_cause.is_none()
+            && adapter == "curl"
+            && diagnosis.category.as_deref() == Some("network/no-local-listener")
+        {
+            self.docker(
+                execution,
+                diagnosis,
+                &mut result,
+                &execution.cwd,
+                deadline,
+                true,
+            );
+        }
+        if diagnosis.status == crate::diagnosis::DiagnosisStatus::Unknown
+            && result.root_cause.is_none()
+            && result.reconstruction_note.is_none()
+        {
+            result.reconstruction_note =
+                Some("The original failure could not be reconstructed safely.".into());
+        }
+        result
     }
 
     pub fn investigate(

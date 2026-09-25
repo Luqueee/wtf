@@ -359,12 +359,6 @@ fn bash_hook(executable: &str) -> String {
         r#"if [[ -n ${{BASH_VERSION-}} && $- == *i* ]]; then
     __wtf_capture_bin={executable}
     if [[ -z ${{__wtf_capture_loaded-}} ]]; then
-        __wtf_capture_is_wtf() {{
-            case " $1 " in
-                *[![:alnum:]_]wtf[![:alnum:]_]*) return 0 ;;
-                *) return 1 ;;
-            esac
-        }}
         __wtf_capture_preexec() {{
             [[ $BASH_COMMAND == __wtf_capture_precmd ]] && return 0
             if [[ ${{__wtf_capture_pending:-0}} == 0 ]]; then
@@ -386,7 +380,7 @@ fn bash_hook(executable: &str) -> String {
                         __wtf_capture_line=$__wtf_capture_history
                     fi
                 fi
-                if [[ $__wtf_capture_status -ne 0 ]] && ! __wtf_capture_is_wtf "$__wtf_capture_line"; then
+                if [[ $__wtf_capture_status -ne 0 ]]; then
                     local __wtf_capture_finish=
                     __wtf_capture_finish=$(command date +%s 2>/dev/null) || __wtf_capture_finish=
                     if [[ $__wtf_capture_finish =~ ^[0-9]+$ ]]; then
@@ -424,12 +418,6 @@ fn zsh_hook(executable: &str) -> String {
     if [[ -z ${{__wtf_capture_loaded-}} ]]; then
         zmodload zsh/datetime 2>/dev/null || true
         autoload -Uz add-zsh-hook
-        __wtf_capture_is_wtf() {{
-            case " $1 " in
-                *[![:alnum:]_]wtf[![:alnum:]_]*) return 0 ;;
-                *) return 1 ;;
-            esac
-        }}
         __wtf_capture_preexec() {{
             __wtf_capture_line=$1
             __wtf_capture_pending=1
@@ -442,7 +430,7 @@ fn zsh_hook(executable: &str) -> String {
         __wtf_capture_precmd() {{
             local __wtf_capture_status=$?
             if [[ ${{__wtf_capture_pending:-0}} == 1 ]]; then
-                if (( __wtf_capture_status != 0 )) && ! __wtf_capture_is_wtf "$__wtf_capture_line"; then
+                if (( __wtf_capture_status != 0 )); then
                     local __wtf_capture_finish='' __wtf_capture_start=''
                     if (( ${{+EPOCHSECONDS}} )); then
                         __wtf_capture_finish=$EPOCHSECONDS
@@ -481,20 +469,18 @@ fn fish_hook(executable: &str) -> String {
         function __wtf_capture_postexec --on-event fish_postexec
             set -l __wtf_capture_status $status
             if test "$__wtf_capture_status" -ne 0
-                if not string match -rq '(^|[^[:alnum:]_])wtf([^[:alnum:]_]|$)' -- "$__wtf_capture_line"
-                    set -l __wtf_capture_finish (command date +%s 2>/dev/null)
-                    if string match -rq '^[0-9]+$' -- "$__wtf_capture_finish"
-                        set -l __wtf_capture_elapsed 0
-                        if set -q CMD_DURATION
-                            if string match -rq '^[0-9]+$' -- "$CMD_DURATION"
-                                set __wtf_capture_elapsed "$CMD_DURATION"
-                            end
+                set -l __wtf_capture_finish (command date +%s 2>/dev/null)
+                if string match -rq '^[0-9]+$' -- "$__wtf_capture_finish"
+                    set -l __wtf_capture_elapsed 0
+                    if set -q CMD_DURATION
+                        if string match -rq '^[0-9]+$' -- "$CMD_DURATION"
+                            set __wtf_capture_elapsed "$CMD_DURATION"
                         end
-                        set -l __wtf_capture_start (math "$__wtf_capture_finish - floor($__wtf_capture_elapsed / 1000)" 2>/dev/null)
-                        if string match -rq '^[0-9]+$' -- "$__wtf_capture_start"
-                            "$__wtf_capture_bin" __record fish "$__wtf_capture_status" "$__wtf_capture_start" "$__wtf_capture_finish" "$__wtf_capture_pwd" "$__wtf_capture_line" >/dev/null 2>&1
-                            or true
-                        end
+                    end
+                    set -l __wtf_capture_start (math "$__wtf_capture_finish - floor($__wtf_capture_elapsed / 1000)" 2>/dev/null)
+                    if string match -rq '^[0-9]+$' -- "$__wtf_capture_start"
+                        "$__wtf_capture_bin" __record fish "$__wtf_capture_status" "$__wtf_capture_start" "$__wtf_capture_finish" "$__wtf_capture_pwd" "$__wtf_capture_line" >/dev/null 2>&1
+                        or true
                     end
                 end
             end
