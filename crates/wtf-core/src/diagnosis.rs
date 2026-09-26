@@ -1,4 +1,3 @@
-use std::io::IsTerminal;
 use std::time::Duration;
 
 use serde::{Deserialize, Serialize};
@@ -31,33 +30,6 @@ pub struct Diagnosis {
     pub entities: ExtractedEntities,
     pub remedy: Option<String>,
     pub normalized: NormalizedOutput,
-}
-
-/// Options controlling terminal rendering.
-#[derive(Debug, Clone, Copy)]
-pub struct RenderOptions {
-    pub color: bool,
-    pub show_fix: bool,
-}
-
-impl Default for RenderOptions {
-    fn default() -> Self {
-        let is_term = std::io::stdout().is_terminal();
-        let no_color = std::env::var_os("NO_COLOR").is_some();
-        Self {
-            color: is_term && !no_color,
-            show_fix: false,
-        }
-    }
-}
-
-impl RenderOptions {
-    pub fn plain() -> Self {
-        Self {
-            color: false,
-            show_fix: false,
-        }
-    }
 }
 
 /// Diagnostic engine that coordinates normalizers, extractors, and detectors.
@@ -189,102 +161,6 @@ impl DiagnosisEngine {
             }
         }
     }
-
-    /// Formats a diagnosis into a concise terminal presentation.
-    pub fn render(diagnosis: &Diagnosis, options: &RenderOptions) -> String {
-        let mut out = String::new();
-
-        // 1. Status icon and summary
-        let (icon, icon_code) = match diagnosis.status {
-            DiagnosisStatus::Confirmed => ("✗", "31;1"), // Bold Red
-            DiagnosisStatus::Likely => ("?", "33;1"),    // Bold Yellow
-            DiagnosisStatus::Unknown => ("?", "33;1"),   // Bold Yellow
-            DiagnosisStatus::Success => ("✓", "32;1"),   // Bold Green
-        };
-
-        if options.color {
-            out.push_str(&format!(
-                "\x1B[{icon_code}m{icon}\x1B[0m \x1B[1m{}\x1B[0m\n",
-                diagnosis.summary
-            ));
-        } else {
-            out.push_str(&format!("{icon} {}\n", diagnosis.summary));
-        }
-
-        // If success, nothing more needed unless requested
-        if diagnosis.status == DiagnosisStatus::Success {
-            return out;
-        }
-
-        // 2. Evidence section
-        if !diagnosis.evidence.is_empty() {
-            out.push('\n');
-            if options.color {
-                out.push_str("\x1B[1mEvidence:\x1B[0m\n");
-            } else {
-                out.push_str("Evidence:\n");
-            }
-            for line in &diagnosis.evidence {
-                out.push_str(&format!("  {line}\n"));
-            }
-        }
-
-        // 3. Detected section (entities and category)
-        let mut detected_items = Vec::new();
-
-        if let Some(port) = diagnosis.entities.primary_port() {
-            // Only show port if category involves network/port or detection mentions port
-            if let Some(cat) = &diagnosis.category {
-                if cat.contains("port") || cat.contains("network") {
-                    detected_items.push(("port", port.to_string()));
-                }
-            }
-        }
-
-        if let Some(path) = diagnosis.entities.primary_path() {
-            // Only show path if category is filesystem or relevant
-            if let Some(cat) = &diagnosis.category {
-                if cat.contains("filesystem") || cat.contains("file") || cat.contains("path") {
-                    detected_items.push(("path", path.display().to_string()));
-                }
-            }
-        }
-
-        if let Some(cat) = &diagnosis.category {
-            detected_items.push(("category", cat.clone()));
-        }
-
-        if !detected_items.is_empty() {
-            out.push('\n');
-            if options.color {
-                out.push_str("\x1B[1mDetected:\x1B[0m\n");
-            } else {
-                out.push_str("Detected:\n");
-            }
-            for (key, val) in detected_items {
-                if options.color {
-                    out.push_str(&format!("  \x1B[36m{key}\x1B[0m: {val}\n"));
-                } else {
-                    out.push_str(&format!("  {key}: {val}\n"));
-                }
-            }
-        }
-
-        // 4. Fix / Remedy section (if enabled)
-        if options.show_fix {
-            if let Some(remedy) = &diagnosis.remedy {
-                out.push('\n');
-                if options.color {
-                    out.push_str("\x1B[1mFix:\x1B[0m\n");
-                } else {
-                    out.push_str("Fix:\n");
-                }
-                out.push_str(&format!("  {remedy}\n"));
-            }
-        }
-
-        out
-    }
 }
 
 #[cfg(test)]
@@ -356,7 +232,5 @@ mod tests {
         let engine = DiagnosisEngine::new();
         let diag = engine.diagnose(&exec);
         assert_eq!(diag.status, DiagnosisStatus::Success);
-        let rendered = DiagnosisEngine::render(&diag, &RenderOptions::plain());
-        assert!(rendered.contains("✓ Command completed successfully."));
     }
 }

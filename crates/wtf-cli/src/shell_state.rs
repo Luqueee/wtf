@@ -333,7 +333,7 @@ fn unsafe_shell_context(line: &str) -> bool {
     line.contains('\n') || line.contains('\r') || line.contains("<<")
 }
 
-fn redact_and_bound(line: &str, limit: usize) -> String {
+pub(crate) fn redact_and_bound(line: &str, limit: usize) -> String {
     // Bound before tokenization so all spans are UTF-8 boundaries and scanning stays cheap.
     let line = bounded(line, limit);
     let tokens = shell_tokens(&line);

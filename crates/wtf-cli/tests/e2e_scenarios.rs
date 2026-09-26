@@ -5,8 +5,9 @@ use serde_json::Value;
 use std::fs;
 use std::io::{Read, Write};
 use std::net::{TcpListener, TcpStream};
+use std::os::unix::fs::PermissionsExt;
 use std::path::Path;
-use std::process::Output;
+use std::process::{Command, Output};
 use std::thread;
 use std::time::{Duration, Instant};
 use support::{shell_quote, Sandbox};
@@ -32,7 +33,33 @@ fn assert_diagnosed(json: &Value, command: &str, exit_code: i32, category: &str)
 }
 
 #[test]
-fn cargo_build_failure_is_diagnosed_and_corrected() {
+fn interactive_cat_failure_checks_current_path_without_replaying_cat() {
+    let sandbox = Sandbox::new();
+    sandbox.install_bash();
+    let absent = sandbox.work.join("absent");
+    let report = sandbox.home.join("cat-report.txt");
+    let script = format!(
+        "cat {}\nwtf --no-color > {}",
+        shell_quote(&absent.to_string_lossy()),
+        shell_quote(&report.to_string_lossy()),
+    );
+    let output = sandbox.run_bash(&sandbox.work, &script, &[]);
+    assert_shell_finished(&output);
+    let text = fs::read_to_string(report).unwrap();
+    assert!(text.contains("Now:"), "{text}");
+    assert!(
+        text.contains(&format!("{} does not exist", absent.display())),
+        "{text}"
+    );
+    assert!(
+        text.contains("Original stdout/stderr was not recorded."),
+        "{text}"
+    );
+    assert!(text.contains("1 check"), "{text}");
+}
+
+#[test]
+fn cargo_build_failure_stays_unknown_and_explicit_builds_still_execute() {
     let sandbox = Sandbox::new();
     sandbox.install_bash();
     let source_dir = sandbox.work.join("src");
@@ -67,19 +94,64 @@ fn cargo_build_failure_is_diagnosed_and_corrected() {
     );
     assert_eq!(fs::read_to_string(fixed_status).unwrap(), "0");
     let json = sandbox.read_json(&json_path, &output);
-    assert_diagnosed(&json, "cargo build", 101, "compilation/rust");
+    assert_eq!(json["command"], "cargo build");
+    assert_eq!(json["exit_status"]["code"], 101);
+    assert_eq!(json["status"], "Unknown");
+    assert_eq!(json["category"], "unknown");
     assert!(
-        json["investigation"]["evidence"]
-            .as_array()
-            .unwrap()
-            .iter()
-            .any(|item| {
-                item["observation"]
-                    .as_str()
-                    .is_some_and(|text| text.contains("compiler"))
-            }),
-        "compile diagnosis should identify compiler probe evidence: {json}"
+        json["investigation"]["root_cause"].is_null(),
+        "diagnosis: {json}"
     );
+    assert_eq!(
+        json["investigation"]["attempts"].as_array().map(Vec::len),
+        Some(0),
+        "failure reconstruction must not execute cargo check: {json}"
+    );
+    assert_eq!(
+        json["investigation"]["evidence"].as_array().map(Vec::len),
+        Some(0),
+        "no compiler cause may be fabricated without captured evidence: {json}"
+    );
+}
+
+#[test]
+fn explicit_cargo_command_runs_once_without_automatic_check() {
+    let sandbox = Sandbox::new();
+    let cargo_dir = sandbox.work.join("bin");
+    fs::create_dir_all(&cargo_dir).expect("create fake Cargo executable directory");
+    let calls = sandbox.home.join("cargo-calls");
+    let cargo = cargo_dir.join("cargo");
+    fs::write(
+        &cargo,
+        format!(
+            "#!/bin/sh\nprintf '%s\\n' \"$*\" >> {}\nexit 101\n",
+            shell_quote(&calls.to_string_lossy())
+        ),
+    )
+    .expect("write fake Cargo executable");
+    fs::set_permissions(&cargo, fs::Permissions::from_mode(0o755))
+        .expect("make fake Cargo executable");
+
+    let output = Command::new(env!("CARGO_BIN_EXE_wtf"))
+        .args(["--json", "--", "cargo", "build"])
+        .env_clear()
+        .env("HOME", &sandbox.home)
+        .env("XDG_CONFIG_HOME", sandbox.home.join(".config"))
+        .env("XDG_RUNTIME_DIR", &sandbox.runtime)
+        .env("WTF_NO_MODEL", "1")
+        .env("PATH", &cargo_dir)
+        .current_dir(&sandbox.work)
+        .output()
+        .expect("run explicit Cargo command through wtf");
+
+    assert_eq!(
+        output.status.code(),
+        Some(101),
+        "explicit command result: stdout={} stderr={}",
+        String::from_utf8_lossy(&output.stdout),
+        String::from_utf8_lossy(&output.stderr)
+    );
+    assert_eq!(fs::read_to_string(calls).unwrap(), "build\n");
 }
 
 #[test]
@@ -214,7 +286,7 @@ fn curl_to_unbound_loopback_port_is_diagnosed_with_uncertainty_and_corrected() {
     let failed_status = sandbox.home.join("curl-failed-status");
     let fixed_status = sandbox.home.join("curl-fixed-status");
     let script = format!(
-        "curl --max-time 3 -sS -o /dev/null http://127.0.0.1:{port}/\nfailed=$?\nprintf '%s' \"$failed\" > {}\nwtf --json > {}\ntouch {}\nfor _ in {{1..300}}; do [[ -e {} ]] && break; sleep 0.01; done\n[[ -e {} ]] || exit 1\ncurl --max-time 3 -sS -o /dev/null http://127.0.0.1:{port}/\nprintf '%s' \"$?\" > {}",
+        "curl --noproxy '*' --connect-timeout 2 --max-time 3 -sS -o /dev/null http://127.0.0.1:{port}/\nfailed=$?\nprintf '%s' \"$failed\" > {}\nwtf --json > {}\ntouch {}\nfor _ in {{1..300}}; do [[ -e {} ]] && break; sleep 0.01; done\n[[ -e {} ]] || exit 1\ncurl --max-time 3 -sS -o /dev/null http://127.0.0.1:{port}/\nprintf '%s' \"$?\" > {}",
         shell_quote(&failed_status.to_string_lossy()),
         shell_quote(&json_path.to_string_lossy()),
         shell_quote(&sandbox.home.join("start-http-server").to_string_lossy()),
@@ -236,11 +308,34 @@ fn curl_to_unbound_loopback_port_is_diagnosed_with_uncertainty_and_corrected() {
     let json = sandbox.read_json(&json_path, &output);
     assert_eq!(
         json["command"],
-        format!("curl --max-time 3 -sS -o /dev/null http://127.0.0.1:{port}/")
+        format!("curl --noproxy * --connect-timeout 2 --max-time 3 -sS -o /dev/null http://127.0.0.1:{port}/")
     );
     assert_eq!(json["exit_status"]["code"], 7);
     assert_eq!(json["status"], "Likely");
     assert_eq!(json["category"], "network/no-local-listener");
+    let attempts = json["investigation"]["attempts"].as_array().unwrap();
+    assert_eq!(
+        attempts.len(),
+        1,
+        "curl alone must not start Docker discovery: {json}"
+    );
+    assert_eq!(attempts[0]["probe"], "Listeners");
+    assert!(
+        json["investigation"]["hypotheses"]
+            .as_array()
+            .unwrap()
+            .iter()
+            .all(|item| item["id"] != "container_exited" && item["id"] != "missing_env"),
+        "unlinked containers are not candidate explanations: {json}"
+    );
+    assert!(
+        json["report"]["claims"]
+            .as_array()
+            .unwrap()
+            .iter()
+            .all(|claim| claim["kind"] != "next"),
+        "an arbitrary local port has no justified next action: {json}"
+    );
     assert!(
         json["investigation"]["evidence"]
             .as_array()
@@ -260,6 +355,15 @@ fn curl_to_unbound_loopback_port_is_diagnosed_with_uncertainty_and_corrected() {
             .as_array()
             .is_some_and(|ports| ports.iter().any(|p| p.as_u64() == Some(u64::from(port)))),
         "diagnosis should retain the attempted port: {json}"
+    );
+    assert_eq!(json["report"]["source_mode"], "shell_record");
+    assert_eq!(json["report"]["capture"], "unavailable");
+    let claims = json["report"]["claims"].as_array().unwrap();
+    assert!(
+        claims.iter().any(|claim| claim["kind"] == "observed"
+            && claim["source"]["id"] == "Listeners"
+            && claim["source"]["observed_at"].as_u64().is_some()),
+        "{json}"
     );
 }
 

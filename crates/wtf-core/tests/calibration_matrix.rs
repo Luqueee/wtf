@@ -179,15 +179,6 @@ fn listeners_call(stdout: &str) -> ExpectedCall {
     output_call(ProbeId::Listeners, program, args, stdout)
 }
 
-fn docker_running_call(stdout: &str) -> ExpectedCall {
-    output_call(
-        ProbeId::DockerRunning,
-        "docker",
-        words(&["ps", "--format", "{{json .}}"]),
-        stdout,
-    )
-}
-
 fn docker_all_call(stdout: &str) -> ExpectedCall {
     output_call(
         ProbeId::DockerAll,
@@ -207,15 +198,6 @@ fn docker_inspect_call(name: &str, stdout: &str) -> ExpectedCall {
             "{{json .State}}|{{json .HostConfig.PortBindings}}|{{.Name}}".into(),
             name.into(),
         ],
-        stdout,
-    )
-}
-
-fn docker_logs_call(name: &str, stdout: &str) -> ExpectedCall {
-    output_call(
-        ProbeId::DockerLogs,
-        "docker",
-        vec!["logs".into(), "--tail".into(), "40".into(), name.into()],
         stdout,
     )
 }
@@ -469,13 +451,6 @@ fn calibration_matrix_exercises_distinct_diagnostic_boundaries() {
         7,
         "curl: (7) Failed to connect to localhost port 8080: Connection refused",
     );
-    let curl_wrong_port = execution(
-        "curl",
-        &["http://localhost:8081".into()],
-        &cwd,
-        7,
-        "curl: (7) Failed to connect to localhost port 8081: Connection refused",
-    );
 
     let (blocks_99_exec, blocks_99_path) = disk_execution(&cwd, "blocks-99-inodes-99");
     let (inode_boundary_exec, inode_boundary_path) = disk_execution(&cwd, "blocks-99-inodes-100");
@@ -510,17 +485,12 @@ fn calibration_matrix_exercises_distinct_diagnostic_boundaries() {
 
     let scenarios = vec![
         Scenario {
-            name: "refusal-with-matching-live-container",
+            name: "curl-refusal-inspects-listeners-without-discovering-unlinked-containers",
             execution: curl_active,
             mode: InvestigationMode::Direct,
             unavailable_programs: vec![],
-            calls: vec![
-                listeners_call(""),
-                docker_running_call(
-                    "{\"Names\":\"web\",\"Ports\":\"0.0.0.0:8080->80/tcp\",\"Status\":\"Up 2 minutes\"}\n",
-                ),
-            ],
-            expected_attempts: vec![(ProbeId::Listeners, "ok"), (ProbeId::DockerRunning, "ok")],
+            calls: vec![listeners_call("")],
+            expected_attempts: vec![(ProbeId::Listeners, "ok")],
             max_probes: 5,
             initial_category: "network/connection-refused",
             initial_status: DiagnosisStatus::Likely,
@@ -528,41 +498,8 @@ fn calibration_matrix_exercises_distinct_diagnostic_boundaries() {
             final_status: DiagnosisStatus::Likely,
             root_cause: None,
             cause: None,
-            evidence: vec![
-                (ProbeId::Listeners, "no local TCP listener on :8080"),
-                (ProbeId::DockerRunning, "web is running"),
-            ],
-            hypotheses: vec![
-                ("no_local_listener", HypothesisStatus::Confirmed),
-                ("container_exited", HypothesisStatus::Rejected),
-            ],
-        },
-        Scenario {
-            name: "refusal-does-not-match-unrelated-exited-port",
-            execution: curl_wrong_port,
-            mode: InvestigationMode::Direct,
-            unavailable_programs: vec![],
-            calls: vec![
-                listeners_call(""),
-                docker_running_call(""),
-                docker_all_call(
-                    "{\"Names\":\"old-web\",\"Ports\":\"0.0.0.0:9001->80/tcp\",\"Status\":\"Exited (1) 2 minutes ago\"}\n",
-                ),
-            ],
-            expected_attempts: vec![
-                (ProbeId::Listeners, "ok"),
-                (ProbeId::DockerRunning, "ok"),
-                (ProbeId::DockerAll, "ok"),
-            ],
-            max_probes: 5,
-            initial_category: "network/connection-refused",
-            initial_status: DiagnosisStatus::Likely,
-            final_category: "network/connection-refused",
-            final_status: DiagnosisStatus::Likely,
-            root_cause: None,
-            cause: None,
-            evidence: vec![(ProbeId::Listeners, "no local TCP listener on :8081")],
-            hypotheses: vec![("container_exited", HypothesisStatus::Candidate)],
+            evidence: vec![(ProbeId::Listeners, "no local TCP listener on :8080")],
+            hypotheses: vec![("no_local_listener", HypothesisStatus::Confirmed)],
         },
         Scenario {
             name: "99-percent-blocks-and-inodes-are-not-full",
@@ -625,7 +562,11 @@ fn calibration_matrix_exercises_distinct_diagnostic_boundaries() {
                 timeout_call(
                     ProbeId::Filesystem,
                     "df",
-                    vec!["-P".into(), "--".into(), timeout_parent.to_string_lossy().into_owned()],
+                    vec![
+                        "-P".into(),
+                        "--".into(),
+                        timeout_parent.to_string_lossy().into_owned(),
+                    ],
                 ),
                 filesystem_call(ProbeId::FilesystemInodes, timeout_parent, &df_inodes(100)),
             ],
@@ -655,7 +596,11 @@ fn calibration_matrix_exercises_distinct_diagnostic_boundaries() {
                 truncated_call(
                     ProbeId::Filesystem,
                     "df",
-                    vec!["-P".into(), "--".into(), truncated_parent.to_string_lossy().into_owned()],
+                    vec![
+                        "-P".into(),
+                        "--".into(),
+                        truncated_parent.to_string_lossy().into_owned(),
+                    ],
                     &df_blocks(100),
                 ),
                 filesystem_call(ProbeId::FilesystemInodes, truncated_parent, &df_inodes(99)),
@@ -715,57 +660,16 @@ fn calibration_matrix_exercises_distinct_diagnostic_boundaries() {
             hypotheses: vec![("file_absent", HypothesisStatus::Rejected)],
         },
         Scenario {
-            name: "connection-refused-container-exit-is-correlated-with-log-cause",
-            execution: execution(
-                "curl",
-                &["http://localhost:8082".into()],
-                &cwd,
-                7,
-                "curl: (7) Failed to connect to localhost port 8082: Connection refused",
-            ),
-            mode: InvestigationMode::Direct,
-            unavailable_programs: vec![],
-            calls: vec![
-                listeners_call(""),
-                docker_running_call(""),
-                docker_all_call(
-                    r#"{"Names":"cache-db","Ports":"0.0.0.0:8082->5432/tcp","Status":"Exited (2) 2 minutes ago"}"#,
-                ),
-                docker_inspect_call(
-                    "cache-db",
-                    r#"{"Status":"exited","ExitCode":2,"OOMKilled":false}|{"5432/tcp":[{"HostIp":"0.0.0.0","HostPort":"8082"}]}|/cache-db"#,
-                ),
-                docker_logs_call("cache-db", "No space left on device\n"),
-            ],
-            expected_attempts: vec![
-                (ProbeId::Listeners, "ok"),
-                (ProbeId::DockerRunning, "ok"),
-                (ProbeId::DockerAll, "ok"),
-                (ProbeId::DockerInspect, "ok"),
-                (ProbeId::DockerLogs, "ok"),
-            ],
-            max_probes: 5,
-            initial_category: "network/connection-refused",
-            initial_status: DiagnosisStatus::Likely,
-            final_category: "network/connection-refused",
-            final_status: DiagnosisStatus::Likely,
-            root_cause: Some("Container \"cache-db\" is not running (exited 2).".into()),
-            cause: Some("Container logs report no space left on device."),
-            evidence: vec![
-                (ProbeId::DockerAll, "cache-db exited (2)"),
-                (ProbeId::DockerInspect, "published port verified"),
-                (ProbeId::DockerLogs, "No space left on device"),
-            ],
-            hypotheses: vec![("container_exited", HypothesisStatus::Confirmed)],
-        },
-        Scenario {
             name: "container-root-survives-budget-cut-before-logs",
             execution: docker_run_execution(&cwd, "worker"),
             mode: InvestigationMode::Reconstructed,
             unavailable_programs: vec![],
             calls: vec![
                 docker_all_call(&docker_recent_list("worker")),
-                docker_inspect_call("worker", "{\"Status\":\"exited\",\"ExitCode\":137,\"OOMKilled\":true}|{}|/worker\n"),
+                docker_inspect_call(
+                    "worker",
+                    "{\"Status\":\"exited\",\"ExitCode\":137,\"OOMKilled\":true}|{}|/worker\n",
+                ),
             ],
             expected_attempts: vec![(ProbeId::DockerAll, "ok"), (ProbeId::DockerInspect, "ok")],
             max_probes: 2,

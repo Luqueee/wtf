@@ -5,6 +5,8 @@ use std::time::{Duration, Instant};
 
 use crate::capture::CommandExecution;
 use crate::investigation::ProbeAttempt;
+#[cfg(feature = "counterfactual-replay")]
+use crate::probes::ProbeSafety;
 use crate::probes::{ProbeId, ProbeOutput, ProbeRunner, ProbeSpec};
 
 mod cargo;
@@ -22,13 +24,6 @@ pub struct AdapterEvidence {
 
 #[derive(Debug, Clone)]
 pub enum Finding {
-    CargoError {
-        code: Option<String>,
-        message: String,
-        file: String,
-        line: u64,
-        column: u64,
-    },
     GitNoUpstream {
         branch: String,
     },
@@ -127,6 +122,25 @@ impl<'a, R: ProbeRunner> AdapterContext<'a, R> {
         });
         output.ok()
     }
+
+    #[cfg(feature = "counterfactual-replay")]
+    pub(crate) fn replay_probes_ready(&self, offered: [ProbeId; 2]) -> bool {
+        if self.attempts.len() >= self.max_probes {
+            return false;
+        }
+        let remaining = self.deadline.saturating_duration_since(Instant::now());
+        if remaining.is_zero() {
+            return false;
+        }
+        offered.into_iter().all(|id| {
+            let Some(spec) = ProbeSpec::new(id, self.cwd, None) else {
+                return false;
+            };
+            spec.safety == ProbeSafety::Safe
+                && !spec.timeout.min(remaining).is_zero()
+                && self.runner.available(spec.program)
+        })
+    }
 }
 
 pub(crate) fn curl_host(args: &[String]) -> Option<String> {
@@ -136,6 +150,15 @@ pub(crate) fn docker_targeted_error(stderr: &str) -> bool {
     docker::bind_mount_error(stderr).is_some()
         || docker_port::is_port_error(stderr)
         || docker::is_daemon_error(stderr)
+}
+
+#[cfg(feature = "counterfactual-replay")]
+pub(crate) fn collect_git_replay<R: ProbeRunner>(
+    failure: &CommandExecution,
+    context: &mut AdapterContext<'_, R>,
+    first: ProbeId,
+) -> (AdapterResult, Option<crate::investigation::GitReplayPoint>) {
+    git::collect_replay(failure, context, first)
 }
 
 pub fn select(failure: &CommandExecution) -> Option<&'static str> {

@@ -2,26 +2,26 @@ use std::io::IsTerminal;
 use std::process::ExitCode;
 
 use clap::{Parser, Subcommand};
-use wtf_core::capture::{execute_command, CommandExecution, ExecutionConfig};
-use wtf_core::diagnosis::{Diagnosis, DiagnosisEngine, DiagnosisStatus, RenderOptions};
+use wtf_core::capture::{execute_command_with_capture, CommandExecution, ExecutionConfig};
+use wtf_core::diagnosis::{Diagnosis, DiagnosisEngine, DiagnosisStatus};
 use wtf_core::investigation::{Investigation, InvestigationEngine};
 use wtf_core::probes::LocalProbeRunner;
 
 mod model;
 mod model_cache;
+mod report;
 mod shell_install;
 mod shell_state;
-
 #[derive(Parser, Debug)]
 #[command(
     name = "wtf",
     author,
     version,
-    about = "A root-cause debugger for your terminal",
+    about = "Local evidence for failed terminal commands",
     after_help = "Example:\n  wtf -- cat /foo/bar\n  wtf -- docker run -p 8080:80 nginx"
 )]
 struct Cli {
-    /// Output diagnosis in JSON format
+    /// Output a versioned, structured evidence report in JSON
     #[arg(long)]
     json: bool,
 
@@ -29,7 +29,7 @@ struct Cli {
     #[arg(long)]
     no_color: bool,
 
-    /// Print raw stdout and stderr produced by the command
+    /// Print bounded, escaped and redacted captured stdout/stderr
     #[arg(long)]
     show_output: bool,
 
@@ -37,14 +37,17 @@ struct Cli {
     #[arg(long)]
     fix: bool,
 
-    /// Include investigation hypotheses, probes, evidence, and captured metadata
+    /// Include probe provenance and captured metadata
     #[arg(long)]
     verbose: bool,
-    /// Use a custom local Laya bundle instead of the automatically cached model
+    /// Opt into a local Laya advisory (downloads a pinned bundle on first use)
+    #[arg(long, conflicts_with = "no_model")]
+    model: bool,
+    /// Use an explicitly selected local Laya model for advisory hypothesis ranking
     #[arg(long, value_name = "DIR", conflicts_with = "no_model")]
     model_dir: Option<std::path::PathBuf>,
 
-    /// Disable the default local model and its first-use download
+    /// Disable local model inference even if a bundle is selected
     #[arg(long)]
     no_model: bool,
 
@@ -101,28 +104,25 @@ fn main() -> ExitCode {
     }
 
     let explicit_command = !cli.command.is_empty();
-    let execution = if explicit_command {
+    let (execution, capture_truncated) = if explicit_command {
         let cmd = &cli.command[0];
-        execute_command(cmd, &cli.command[1..], &ExecutionConfig::default())
+        execute_command_with_capture(cmd, &cli.command[1..], &ExecutionConfig::default())
     } else if let Some(execution) = shell_state::load_recent() {
-        execution
+        (execution, false)
     } else {
         println!("No recent failed command found.");
         return ExitCode::from(1);
     };
 
     if explicit_command && cli.show_output && !cli.json {
-        if !execution.stdout.is_empty() {
-            print!("{}", execution.stdout);
-        }
-        if !execution.stderr.is_empty() {
-            eprint!("{}", execution.stderr);
-        }
+        let (stdout, stderr) = report::Report::sanitized_output(&execution);
+        print!("{stdout}");
+        eprint!("{stderr}");
     }
 
     let (diagnosis, investigation) = diagnose(&execution);
     let no_model = cli.no_model || std::env::var("WTF_NO_MODEL").as_deref() == Ok("1");
-    let model_result = (!no_model).then(|| {
+    let model_result = ((cli.model || cli.model_dir.is_some()) && !no_model).then(|| {
         investigation.as_ref().map_or(Ok(None), |investigation| {
             if diagnosis.status == DiagnosisStatus::Confirmed {
                 Ok(None)
@@ -131,11 +131,24 @@ fn main() -> ExitCode {
             }
         })
     });
+    let report = report::Report::build(
+        &execution,
+        &diagnosis,
+        investigation.as_ref(),
+        if explicit_command {
+            report::SourceMode::Explicit
+        } else {
+            report::SourceMode::ShellRecord
+        },
+        cli.fix,
+        capture_truncated,
+    );
     render_result(
         &execution,
         &diagnosis,
         investigation.as_ref(),
         model_result.as_ref(),
+        &report,
         &cli,
     );
 
@@ -178,11 +191,14 @@ fn render_result(
     diagnosis: &Diagnosis,
     investigation: Option<&Investigation>,
     model_result: Option<&Result<Option<model::ModelDecision>, String>>,
+    report: &report::Report,
     cli: &Cli,
 ) {
     if cli.json {
         #[derive(serde::Serialize)]
         struct JsonOutput<'a> {
+            schema_version: u32,
+            report: &'a report::Report,
             #[serde(flatten)]
             diagnosis: &'a Diagnosis,
             investigation: Option<&'a Investigation>,
@@ -193,60 +209,44 @@ fn render_result(
         }
 
         let output = JsonOutput {
+            schema_version: 1,
+            report,
             diagnosis,
             investigation,
             model_decision: model_result.and_then(|result| result.as_ref().ok()?.as_ref()),
             model_error: model_result.and_then(|result| result.as_ref().err().map(String::as_str)),
         };
-        let json_str = serde_json::to_string_pretty(&output)
-            .unwrap_or_else(|e| format!("{{\"error\": \"Failed to serialize: {e}\"}}"));
-        println!("{json_str}");
+        match serde_json::to_value(&output) {
+            Ok(mut value) => {
+                report::sanitize_json(&mut value);
+                println!(
+                    "{}",
+                    serde_json::to_string_pretty(&value).expect("valid JSON value")
+                );
+            }
+            Err(error) => println!("{}", serde_json::json!({ "error": error.to_string() })),
+        }
         return;
     }
 
-    if diagnosis.status == DiagnosisStatus::Success && !cli.show_output {
-        if !execution.stdout.is_empty() {
-            print!("{}", execution.stdout);
-        }
-        if !execution.stderr.is_empty() {
-            eprint!("{}", execution.stderr);
-        }
-    } else if let Some(investigation) = investigation {
-        if cli.verbose {
-            println!(
-                "Captured command: {}\nWorking directory: {}\nExit code: {}\nDuration: {:?}",
-                execution.full_command(),
-                execution.cwd.display(),
-                execution.exit_status.code.map_or_else(
-                    || "terminated by signal".to_string(),
-                    |code| code.to_string()
-                ),
-                execution.duration
-            );
-        }
-        let use_color = !cli.no_color
-            && std::io::stdout().is_terminal()
-            && std::env::var_os("NO_COLOR").is_none();
-
-        let render_options = RenderOptions {
-            color: use_color,
-            show_fix: cli.fix,
-        };
-        let rendered = investigation.render(diagnosis, &render_options, cli.verbose);
-        print!("{rendered}");
+    let use_color = !cli.no_color
+        && std::io::stdout().is_terminal()
+        && std::env::var_os("NO_COLOR").is_none()
+        && std::env::var("TERM").as_deref() != Ok("dumb");
+    print!(
+        "{}",
+        report.render(use_color, cli.verbose, execution, investigation)
+    );
+    if cli.verbose {
         if let Some(result) = model_result {
             match result {
                 Ok(Some(decision)) => {
                     if let Some(preferred) = &decision.preferred {
-                        let score = decision
-                            .probabilities
-                            .iter()
-                            .find(|option| &option.hypothesis == preferred)
-                            .expect("preferred option is present")
-                            .probability;
-                        println!("Local model (advisory, not confirmed): {preferred} ({score:.2})");
+                        println!(
+                            "Local model ranked {preferred} (advisory; not a verified cause)."
+                        );
                     } else {
-                        println!("Local model: no hypothesis reached the 0.80 advisory threshold.");
+                        println!("Local model abstained.");
                     }
                 }
                 Err(error) => eprintln!("Local model unavailable: {error}"),

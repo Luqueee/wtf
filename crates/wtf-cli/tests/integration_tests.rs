@@ -1,152 +1,463 @@
 use std::process::Command;
+use std::time::{SystemTime, UNIX_EPOCH};
 
 fn wtf_bin() -> &'static str {
     env!("CARGO_BIN_EXE_wtf")
 }
 
 #[test]
-fn test_cli_cat_file_not_found() {
+fn known_failure_reports_origin_and_exit_status_without_fixing_it() {
+    let dir = tempfile::tempdir().unwrap();
+    let missing = dir.path().join("missing");
     let output = Command::new(wtf_bin())
-        .args(["--no-color", "--", "cat", "/foo/bar"])
+        .args(["--json", "--", "cat", missing.to_str().unwrap()])
         .output()
-        .expect("failed to run wtf");
-
+        .unwrap();
     assert_eq!(output.status.code(), Some(1));
-    let stdout = String::from_utf8_lossy(&output.stdout);
-    assert!(stdout.contains("✗ File does not exist."));
-    assert!(stdout.contains("Evidence:"));
-    assert!(stdout.contains("cat: /foo/bar: No such file or directory"));
-    assert!(stdout.contains("Detected:"));
-    assert!(stdout.contains("path: /foo/bar"));
-    assert!(stdout.contains("category: filesystem/not-found"));
-}
-
-#[test]
-fn test_cli_cat_file_not_found_with_fix() {
-    let output = Command::new(wtf_bin())
-        .args(["--no-color", "--fix", "--", "cat", "/foo/bar"])
-        .output()
-        .expect("failed to run wtf");
-
-    assert_eq!(output.status.code(), Some(1));
-    let stdout = String::from_utf8_lossy(&output.stdout);
-    assert!(stdout.contains("Fix:"));
-    assert!(stdout.contains("Check that the path '/foo/bar' exists"));
-}
-
-#[test]
-fn test_cli_command_not_found() {
-    let output = Command::new(wtf_bin())
-        .args(["--no-color", "--", "command_that_does_not_exist_98765"])
-        .output()
-        .expect("failed to run wtf");
-
-    assert_eq!(output.status.code(), Some(127));
-    let stdout = String::from_utf8_lossy(&output.stdout);
-    assert!(stdout.contains("✗ Command 'command_that_does_not_exist_98765' was not found."));
-    assert!(stdout.contains("category: command/not-found"));
-}
-
-#[test]
-fn test_cli_success_command() {
-    let output = Command::new(wtf_bin())
-        .args(["--no-color", "--", "echo", "hello", "world"])
-        .output()
-        .expect("failed to run wtf");
-
-    assert_eq!(output.status.code(), Some(0));
-    let stdout = String::from_utf8_lossy(&output.stdout);
-    assert!(stdout.contains("hello world"));
-}
-
-#[test]
-fn test_cli_json_output() {
-    let output = Command::new(wtf_bin())
-        .args(["--json", "--", "cat", "/foo/bar"])
-        .output()
-        .expect("failed to run wtf");
-
-    assert_eq!(output.status.code(), Some(1));
-    let stdout = String::from_utf8_lossy(&output.stdout);
-    let json: serde_json::Value = serde_json::from_str(&stdout).expect("valid JSON expected");
-
-    assert_eq!(json["status"], "Confirmed");
-    assert_eq!(json["summary"], "File does not exist.");
+    let json: serde_json::Value = serde_json::from_slice(&output.stdout).unwrap();
+    assert_eq!(json["schema_version"], 1);
+    assert_eq!(json["report"]["source_mode"], "explicit");
+    assert_eq!(json["report"]["outcome"], "1");
+    assert_eq!(json["report"]["capture"], "captured");
+    assert_eq!(json["report"]["claims"][0]["kind"], "observed");
+    assert_eq!(json["report"]["claims"][0]["source"]["type"], "probe");
     assert_eq!(json["category"], "filesystem/not-found");
-    assert_eq!(json["entities"]["paths"][0], "/foo/bar");
+    assert!(!missing.exists());
 }
 
 #[test]
-fn test_cli_large_simultaneous_streams_deadlock_prevention() {
-    // Generate 50,000 lines on stdout and stderr simultaneously to prove no pipe deadlock occurs
+fn arbitrary_command_reports_evidence_without_inventing_a_missing_fact() {
     let output = Command::new(wtf_bin())
         .args([
             "--no-color",
             "--",
             "sh",
             "-c",
-            "python3 -c 'import sys\nfor i in range(20000):\n    sys.stdout.write(\"out \" + str(i) + \"\\n\")\n    sys.stderr.write(\"err \" + str(i) + \"\\n\")\nsys.stderr.write(\"cat: /var/log/missing.log: No such file or directory\\n\")\nsys.exit(1)'",
+            "echo 'unexpected mystery failure' >&2; exit 42",
         ])
         .output()
-        .expect("failed to run wtf");
-
-    assert_eq!(output.status.code(), Some(1));
-    let stdout = String::from_utf8_lossy(&output.stdout);
-    assert!(stdout.contains("✗ File does not exist."));
-    assert!(stdout.contains("path: /var/log/missing.log"));
+        .unwrap();
+    assert_eq!(output.status.code(), Some(42));
+    let text = String::from_utf8(output.stdout).unwrap();
+    assert!(text.contains("sh  42"), "{text}");
+    assert!(text.contains("unexpected mystery failure"), "{text}");
+    assert!(!text.contains("MISSING"), "{text}");
+    assert!(!text.contains("Root cause"), "{text}");
 }
 
 #[test]
-fn test_cli_invalid_utf8_output_handling() {
-    // Output raw non-UTF8 bytes along with a file error
+fn real_git_failure_shows_reported_error_without_generic_missing_claim() {
+    let dir = tempfile::tempdir().unwrap();
+    let output = Command::new(wtf_bin())
+        .args([
+            "--json",
+            "--",
+            "git",
+            "-C",
+            dir.path().to_str().unwrap(),
+            "status",
+            "--short",
+        ])
+        .output()
+        .unwrap();
+    assert_eq!(output.status.code(), Some(128));
+    let json: serde_json::Value = serde_json::from_slice(&output.stdout).unwrap();
+    assert_eq!(
+        json["report"]["checks"], 0,
+        "the surrounding repository is not the git -C target"
+    );
+    assert_eq!(json["report"]["claims"][0]["kind"], "observed");
+    assert_eq!(json["report"]["claims"][0]["source"]["field"], "stderr");
+    assert!(json["report"]["claims"][0]["text"]
+        .as_str()
+        .unwrap()
+        .contains("not a git repository"));
+    assert!(!json["report"]["claims"]
+        .as_array()
+        .unwrap()
+        .iter()
+        .any(|claim| claim["kind"] == "missing"));
+    assert!(json["investigation"]["root_cause"].is_null());
+}
+
+#[test]
+fn shell_record_discloses_missing_output_without_replaying_failed_action() {
+    let dir = tempfile::tempdir().unwrap();
+    let marker = dir.path().join("would-be-replayed");
+    let now = SystemTime::now()
+        .duration_since(UNIX_EPOCH)
+        .unwrap()
+        .as_secs();
+    let command = format!("sh -c 'touch {}'", marker.display());
+    let recorded = Command::new(wtf_bin())
+        .env("XDG_RUNTIME_DIR", dir.path())
+        .args([
+            "__record",
+            "bash",
+            "23",
+            &now.to_string(),
+            &now.to_string(),
+            dir.path().to_str().unwrap(),
+            &command,
+        ])
+        .output()
+        .unwrap();
+    assert!(recorded.status.success());
+    let output = Command::new(wtf_bin())
+        .env("XDG_RUNTIME_DIR", dir.path())
+        .args(["--json"])
+        .output()
+        .unwrap();
+    assert_eq!(output.status.code(), Some(23));
+    let json: serde_json::Value = serde_json::from_slice(&output.stdout).unwrap();
+    assert_eq!(json["report"]["source_mode"], "shell_record");
+    assert_eq!(json["report"]["capture"], "unavailable");
+    assert!(json["report"]["claims"]
+        .as_array()
+        .unwrap()
+        .iter()
+        .any(|claim| claim["kind"] == "missing"
+            && claim["text"].as_str().unwrap().contains("not recorded")));
+    assert!(!marker.exists());
+}
+
+#[cfg(target_os = "linux")]
+#[test]
+fn shell_cat_checks_only_an_unambiguous_literal_path_at_inspection_time() {
+    use std::fs;
+    use std::os::unix::fs::symlink;
+
+    let dir = tempfile::tempdir().unwrap();
+    let bin = dir.path().join("bin");
+    fs::create_dir(&bin).unwrap();
+    symlink("/usr/bin/stat", bin.join("stat")).unwrap();
+    let path = dir.path().join("target");
+    let now = SystemTime::now()
+        .duration_since(UNIX_EPOCH)
+        .unwrap()
+        .as_secs()
+        .to_string();
+
+    for (command, present, expected) in [
+        (format!("cat {}", path.display()), false, "does not exist"),
+        (format!("cat {}", path.display()), true, "exists"),
+        ("cat $PATH".to_owned(), true, ""),
+        (format!("cat {} /other", path.display()), true, ""),
+    ] {
+        if present {
+            fs::write(&path, b"present").unwrap();
+        }
+        let recorded = Command::new(wtf_bin())
+            .env("XDG_RUNTIME_DIR", dir.path())
+            .args([
+                "__record",
+                "bash",
+                "1",
+                &now,
+                &now,
+                dir.path().to_str().unwrap(),
+                &command,
+            ])
+            .output()
+            .unwrap();
+        assert!(recorded.status.success(), "{recorded:?}");
+        let output = Command::new(wtf_bin())
+            .env("XDG_RUNTIME_DIR", dir.path())
+            .env("PATH", &bin)
+            .args(["--json"])
+            .output()
+            .unwrap();
+        assert_eq!(output.status.code(), Some(1), "{output:?}");
+        let json: serde_json::Value = serde_json::from_slice(&output.stdout).unwrap();
+        let claims = json["report"]["claims"].as_array().unwrap();
+        assert_eq!(json["report"]["capture"], "unavailable");
+        assert!(json["investigation"]["root_cause"].is_null(), "{json}");
+        assert!(claims.iter().any(|claim| claim["kind"] == "missing"));
+        if expected.is_empty() {
+            assert_eq!(json["report"]["checks"], 0, "{json}");
+            assert!(!claims.iter().any(|claim| claim["kind"] == "observed"));
+        } else {
+            assert_eq!(json["report"]["checks"], 1, "{json}");
+            assert!(
+                claims.iter().any(|claim| {
+                    claim["kind"] == "observed"
+                        && claim["text"].as_str().unwrap().contains(expected)
+                        && claim["source"]["id"] == "Stat"
+                }),
+                "{json}"
+            );
+        }
+    }
+    assert_eq!(fs::read(path).unwrap(), b"present");
+}
+
+#[test]
+fn captured_terminal_controls_and_credentials_cannot_format_default_report() {
     let output = Command::new(wtf_bin())
         .args([
             "--no-color",
+            "--",
+            "sh",
+            "-c",
+            "printf '\\033[31mAuthorization: Bearer SHHH\\033[0m\\n' >&2; exit 3",
+        ])
+        .output()
+        .unwrap();
+    assert_eq!(output.status.code(), Some(3));
+    let text = String::from_utf8(output.stdout).unwrap();
+    assert!(!text.contains('\u{1b}'), "{text:?}");
+    assert!(!text.contains("SHHH"), "{text}");
+    assert!(text.contains("OBSERVED"), "{text}");
+}
+
+#[test]
+fn structured_and_explicit_output_redact_secret_bearing_capture() {
+    for option in ["--json", "--show-output"] {
+        let output = Command::new(wtf_bin())
+            .args([
+                option,
+                "--",
+                "sh",
+                "-c",
+                "printf 'Authorization: Bearer SHHH\\n' >&2; exit 4",
+            ])
+            .output()
+            .unwrap();
+        assert_eq!(output.status.code(), Some(4));
+        assert!(!String::from_utf8_lossy(&output.stdout).contains("SHHH"));
+        assert!(!String::from_utf8_lossy(&output.stderr).contains("SHHH"));
+    }
+}
+
+#[test]
+fn successful_command_is_reported_and_output_requires_explicit_request() {
+    let quiet = Command::new(wtf_bin())
+        .args(["--no-color", "--", "echo", "private-payload"])
+        .output()
+        .unwrap();
+    assert_eq!(quiet.status.code(), Some(0));
+    let text = String::from_utf8(quiet.stdout).unwrap();
+    assert!(text.contains("completed successfully"), "{text}");
+    assert!(!text.contains("private-payload"), "{text}");
+    let shown = Command::new(wtf_bin())
+        .args([
+            "--no-color",
+            "--show-output",
+            "--",
+            "echo",
+            "private-payload",
+        ])
+        .output()
+        .unwrap();
+    assert_eq!(shown.status.code(), Some(0));
+    assert!(String::from_utf8(shown.stdout)
+        .unwrap()
+        .contains("private-payload"));
+}
+
+#[test]
+fn spawn_failure_and_signal_keep_distinct_outcomes() {
+    let absent = Command::new(wtf_bin())
+        .args(["--json", "--", "definitely-absent-wtf-command-93850"])
+        .output()
+        .unwrap();
+    assert_eq!(absent.status.code(), Some(127));
+    let json: serde_json::Value = serde_json::from_slice(&absent.stdout).unwrap();
+    assert_eq!(json["report"]["outcome"], "127");
+    assert_eq!(
+        json["report"]["claims"][0]["source"]["field"],
+        "spawn_error"
+    );
+
+    let signaled = Command::new(wtf_bin())
+        .args(["--json", "--", "sh", "-c", "kill -TERM $$"])
+        .output()
+        .unwrap();
+    assert_eq!(signaled.status.code(), Some(1));
+    let json: serde_json::Value = serde_json::from_slice(&signaled.stdout).unwrap();
+    assert_eq!(json["report"]["outcome"], "signal 15");
+    assert_eq!(json["exit_status"]["signal"], 15);
+}
+
+#[test]
+fn truncated_output_is_marked_without_losing_exit_status() {
+    let output = Command::new(wtf_bin())
+        .args(["--json", "--", "python3", "-c", "import sys; sys.stderr.write('x' * 1100000); sys.stderr.write('\\ntrailing reason\\n'); sys.exit(19)"])
+        .output().unwrap();
+    assert_eq!(output.status.code(), Some(19));
+    let json: serde_json::Value = serde_json::from_slice(&output.stdout).unwrap();
+    assert_eq!(json["report"]["capture"], "truncated");
+    assert_eq!(json["report"]["outcome"], "19");
+    assert_eq!(json["report"]["source_mode"], "explicit");
+}
+
+#[test]
+fn process_output_cannot_forge_a_capture_truncation_marker() {
+    let output = Command::new(wtf_bin())
+        .args([
+            "--json",
+            "--",
+            "sh",
+            "-c",
+            "printf '[... 12 bytes omitted ...]\\n' >&2; exit 6",
+        ])
+        .output()
+        .unwrap();
+    assert_eq!(output.status.code(), Some(6));
+    let json: serde_json::Value = serde_json::from_slice(&output.stdout).unwrap();
+    assert_eq!(json["report"]["capture"], "captured");
+}
+
+#[test]
+fn recognizable_credentials_are_redacted_from_json_and_text_channels() {
+    let script = r#"printf 'Authorization: Bearer HEADER_SECRET\nAuthorization:\n Bearer FOLDED_HEADER_SECRET\nhttps://user:URL_PASSWORD@example.invalid/resource?access_token=URL_QUERY_SECRET\nCookie: session=COOKIE_SECRET\n\033]52;c;OSC_SECRET\a\nsafe trailing line\n'; printf 'X-API-Key: STDERR_API_SECRET\n' >&2; exit 37"#;
+    let modes: Vec<Vec<&str>> = vec![
+        vec!["--json"],
+        vec!["--no-color"],
+        vec!["--no-color", "--verbose"],
+        vec!["--no-color", "--show-output"],
+    ];
+    let secrets = [
+        "HEADER_SECRET",
+        "FOLDED_HEADER_SECRET",
+        "URL_PASSWORD",
+        "URL_QUERY_SECRET",
+        "COOKIE_SECRET",
+        "OSC_SECRET",
+        "STDERR_API_SECRET",
+        "ARG_PASSWORD_SECRET",
+        "ARG_HEADER_SECRET",
+    ];
+
+    for mode in modes {
+        let mut command = Command::new(wtf_bin());
+        command.args(&mode).args([
+            "--",
+            "sh",
+            "-c",
+            script,
+            "--password=ARG_PASSWORD_SECRET",
+            "--header",
+            "X-Private: ARG_HEADER_SECRET",
+        ]);
+        let output = command.output().unwrap();
+        assert_eq!(output.status.code(), Some(37));
+        let stdout = String::from_utf8_lossy(&output.stdout);
+        let stderr = String::from_utf8_lossy(&output.stderr);
+        for secret in secrets {
+            assert!(!stdout.contains(secret), "stdout leaked {secret}: {stdout}");
+            assert!(!stderr.contains(secret), "stderr leaked {secret}: {stderr}");
+        }
+        assert!(
+            !stdout.contains('\u{1b}'),
+            "terminal control survived: {stdout:?}"
+        );
+        assert!(
+            !stderr.contains('\u{1b}'),
+            "terminal control survived: {stderr:?}"
+        );
+
+        if mode.contains(&"--json") {
+            let json: serde_json::Value = serde_json::from_slice(&output.stdout).unwrap();
+            assert_eq!(json["schema_version"], 1);
+            assert_eq!(json["report"]["source_mode"], "explicit");
+            let claims = json["report"]["claims"].as_array().unwrap();
+            assert!(!claims.is_empty());
+            assert!(claims.iter().all(|claim| {
+                let source = &claim["source"];
+                match source["type"].as_str() {
+                    Some("execution" | "metadata") => source["field"].is_string(),
+                    Some("probe") => {
+                        source["outcome"].is_string() && source["observed_at"].is_number()
+                    }
+                    Some("suggestion") => true,
+                    _ => false,
+                }
+            }));
+            assert!(json["normalized"]["clean_stdout"]
+                .as_str()
+                .unwrap()
+                .contains("safe trailing line"));
+        }
+    }
+    let arguments_only = Command::new(wtf_bin())
+        .args([
+            "--json",
+            "--",
+            "sh",
+            "-c",
+            "exit 38",
+            "--password=ARG_ONLY_PASSWORD_SECRET",
+            "--header",
+            "X-Private: ARG_ONLY_HEADER_SECRET",
+        ])
+        .output()
+        .unwrap();
+    assert_eq!(arguments_only.status.code(), Some(38));
+    let arguments_stdout = String::from_utf8_lossy(&arguments_only.stdout);
+    let arguments_stderr = String::from_utf8_lossy(&arguments_only.stderr);
+    for secret in ["ARG_ONLY_PASSWORD_SECRET", "ARG_ONLY_HEADER_SECRET"] {
+        assert!(!arguments_stdout.contains(secret), "{arguments_stdout}");
+        assert!(!arguments_stderr.contains(secret), "{arguments_stderr}");
+    }
+}
+
+#[test]
+fn command_labels_cannot_inject_terminal_controls_or_multiline_text() {
+    use std::os::unix::fs::PermissionsExt;
+
+    let dir = tempfile::tempdir().unwrap();
+    let command_path = dir
+        .path()
+        .join("report-tool\nLABEL_INJECTION_SECRET\u{1b}[31m");
+    std::fs::write(&command_path, "#!/bin/sh\nprintf 'ok\\n'\n").unwrap();
+    std::fs::set_permissions(&command_path, std::fs::Permissions::from_mode(0o755)).unwrap();
+    let command_path = command_path.to_str().unwrap();
+
+    let json_output = Command::new(wtf_bin())
+        .args(["--json", "--", command_path])
+        .output()
+        .unwrap();
+    assert!(json_output.status.success());
+    let json: serde_json::Value = serde_json::from_slice(&json_output.stdout).unwrap();
+    assert_eq!(
+        json["command"].as_str().unwrap(),
+        command_path.split('\n').next().unwrap()
+    );
+    assert_eq!(json["report"]["command_label"], "report-tool");
+    assert!(
+        !String::from_utf8_lossy(&json_output.stdout).contains("LABEL_INJECTION_SECRET"),
+        "{}",
+        String::from_utf8_lossy(&json_output.stdout)
+    );
+    assert!(!String::from_utf8_lossy(&json_output.stdout).contains('\u{1b}'));
+
+    let text_output = Command::new(wtf_bin())
+        .args(["--no-color", "--verbose", "--", command_path])
+        .output()
+        .unwrap();
+    assert!(text_output.status.success());
+    let stdout = String::from_utf8_lossy(&text_output.stdout);
+    assert!(stdout.contains("report-tool"));
+    assert!(!stdout.contains("LABEL_INJECTION_SECRET"));
+    assert!(!stdout.contains('\u{1b}'));
+}
+
+#[test]
+fn json_diagnostic_lines_remain_bounded_after_sanitization() {
+    let output = Command::new(wtf_bin())
+        .args([
+            "--json",
             "--",
             "python3",
             "-c",
-            "import sys\nsys.stderr.buffer.write(b'\\xff\\xfe\\x80cat: /bad/path.txt: No such file or directory\\n')\nsys.exit(1)",
+            "import sys; sys.stdout.write('x' * 6000); sys.exit(5)",
         ])
         .output()
-        .expect("failed to run wtf");
-
-    assert_eq!(output.status.code(), Some(1));
-    let stdout = String::from_utf8_lossy(&output.stdout);
-    assert!(stdout.contains("✗ File does not exist."));
-    assert!(stdout.contains("path: /bad/path.txt"));
-}
-
-#[test]
-fn test_cli_unknown_failure_fallback() {
-    let output = Command::new(wtf_bin())
-        .args([
-            "--no-color",
-            "--",
-            "sh",
-            "-c",
-            "echo 'unexpected mystery failure occurred' >&2; exit 42",
-        ])
-        .output()
-        .expect("failed to run wtf");
-
-    assert_eq!(output.status.code(), Some(42));
-    let stdout = String::from_utf8_lossy(&output.stdout);
-    assert!(stdout.contains("? Command failed with exit code 42."));
-    assert!(stdout.contains("Evidence:"));
-    assert!(stdout.contains("unexpected mystery failure occurred"));
-    assert!(stdout.contains("category: unknown"));
-}
-
-#[test]
-fn test_cli_argv_spaces_preserved_without_shell_injection() {
-    // Verify arguments with spaces and quotes are passed directly to binary
-    let output = Command::new(wtf_bin())
-        .args(["--no-color", "--", "cat", "/path with spaces/file.txt"])
-        .output()
-        .expect("failed to run wtf");
-
-    assert_eq!(output.status.code(), Some(1));
-    let stdout = String::from_utf8_lossy(&output.stdout);
-    assert!(stdout.contains("✗ File does not exist."));
-    assert!(stdout.contains("path: /path with spaces/file.txt"));
+        .unwrap();
+    assert_eq!(output.status.code(), Some(5));
+    let json: serde_json::Value = serde_json::from_slice(&output.stdout).unwrap();
+    let clean_stdout = json["normalized"]["clean_stdout"].as_str().unwrap();
+    assert_eq!(clean_stdout.len(), 4096);
+    assert!(clean_stdout.chars().all(|character| character == 'x'));
 }

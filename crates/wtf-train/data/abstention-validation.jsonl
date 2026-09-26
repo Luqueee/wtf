@@ -1,0 +1,1 @@
+{"schema":"wtf.probe-choice.v1","example_id":"disk-before-block-or-inode","family_id":"filesystem-capacity","state":{"category":"filesystem/disk-full","hypotheses":[{"id":"filesystem_full","status":"candidate"}],"probe_results":[]},"offered":["Filesystem","FilesystemInodes"],"target":"abstain"}

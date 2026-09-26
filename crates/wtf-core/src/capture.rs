@@ -92,9 +92,16 @@ impl CommandExecution {
 /// If the output exceeds `max_bytes`, the head (25%) and tail (75%) are preserved,
 /// and an omission marker is inserted in between.
 pub fn drain_stream_bounded<R: Read + Send + 'static>(
-    mut reader: R,
+    reader: R,
     max_bytes: usize,
 ) -> io::Result<String> {
+    drain_stream_with_truncation(reader, max_bytes).map(|(text, _)| text)
+}
+
+fn drain_stream_with_truncation<R: Read + Send + 'static>(
+    mut reader: R,
+    max_bytes: usize,
+) -> io::Result<(String, bool)> {
     let mut total_bytes = 0usize;
     let head_limit = max_bytes / 4;
     let tail_limit = max_bytes.saturating_sub(head_limit);
@@ -128,15 +135,18 @@ pub fn drain_stream_bounded<R: Read + Send + 'static>(
         // Everything fit without truncation
         let mut all_bytes = head;
         all_bytes.extend_from_slice(&ring.into_vec());
-        Ok(String::from_utf8_lossy(&all_bytes).into_owned())
+        Ok((String::from_utf8_lossy(&all_bytes).into_owned(), false))
     } else {
         let omitted = total_bytes - (head.len() + ring.len());
         let head_str = String::from_utf8_lossy(&head);
         let tail_bytes = ring.into_vec();
         let tail_str = String::from_utf8_lossy(&tail_bytes);
-        Ok(format!(
-            "{}\n[... {} bytes omitted ...]\n{}",
-            head_str, omitted, tail_str
+        Ok((
+            format!(
+                "{}\n[... {} bytes omitted ...]\n{}",
+                head_str, omitted, tail_str
+            ),
+            true,
         ))
     }
 }
@@ -204,6 +214,16 @@ pub fn execute_command(
     args: &[String],
     config: &ExecutionConfig,
 ) -> CommandExecution {
+    execute_command_with_capture(command, args, config).0
+}
+
+/// Like `execute_command`, but returns whether either captured stream was truncated.
+/// This fact comes from the byte counter, never from process-controlled output text.
+pub fn execute_command_with_capture(
+    command: &str,
+    args: &[String],
+    config: &ExecutionConfig,
+) -> (CommandExecution, bool) {
     let start_time = Instant::now();
     let timestamp = SystemTime::now();
 
@@ -222,20 +242,23 @@ pub fn execute_command(
                 io::ErrorKind::PermissionDenied => 126,
                 _ => 1,
             };
-            return CommandExecution {
-                command: command.to_string(),
-                args: args.to_vec(),
-                cwd: config.cwd.clone(),
-                exit_status: ProcessExit {
-                    code: Some(exit_code),
-                    signal: None,
+            return (
+                CommandExecution {
+                    command: command.to_string(),
+                    args: args.to_vec(),
+                    cwd: config.cwd.clone(),
+                    exit_status: ProcessExit {
+                        code: Some(exit_code),
+                        signal: None,
+                    },
+                    stdout: String::new(),
+                    stderr: format!("wtf: failed to execute '{command}': {err}"),
+                    duration,
+                    timestamp,
+                    spawn_error: Some(err.to_string()),
                 },
-                stdout: String::new(),
-                stderr: format!("wtf: failed to execute '{command}': {err}"),
-                duration,
-                timestamp,
-                spawn_error: Some(err.to_string()),
-            };
+                false,
+            );
         }
     };
 
@@ -246,31 +269,31 @@ pub fn execute_command(
 
     let stdout_thread = thread::spawn(move || {
         if let Some(reader) = stdout_handle {
-            drain_stream_bounded(reader, max_stream_bytes)
-                .unwrap_or_else(|e| format!("<error reading stdout: {e}>"))
+            drain_stream_with_truncation(reader, max_stream_bytes)
+                .unwrap_or_else(|e| (format!("<error reading stdout: {e}>"), false))
         } else {
-            String::new()
+            (String::new(), false)
         }
     });
 
     let stderr_thread = thread::spawn(move || {
         if let Some(reader) = stderr_handle {
-            drain_stream_bounded(reader, max_stream_bytes)
-                .unwrap_or_else(|e| format!("<error reading stderr: {e}>"))
+            drain_stream_with_truncation(reader, max_stream_bytes)
+                .unwrap_or_else(|e| (format!("<error reading stderr: {e}>"), false))
         } else {
-            String::new()
+            (String::new(), false)
         }
     });
 
     let wait_res = child.wait();
     let duration = start_time.elapsed();
 
-    let stdout = stdout_thread
+    let (stdout, stdout_truncated) = stdout_thread
         .join()
-        .unwrap_or_else(|_| "<stdout thread panicked>".to_string());
-    let stderr = stderr_thread
+        .unwrap_or_else(|_| ("<stdout thread panicked>".to_string(), false));
+    let (stderr, stderr_truncated) = stderr_thread
         .join()
-        .unwrap_or_else(|_| "<stderr thread panicked>".to_string());
+        .unwrap_or_else(|_| ("<stderr thread panicked>".to_string(), false));
 
     let exit_status = match wait_res {
         Ok(status) => {
@@ -296,17 +319,20 @@ pub fn execute_command(
         },
     };
 
-    CommandExecution {
-        command: command.to_string(),
-        args: args.to_vec(),
-        cwd: config.cwd.clone(),
-        exit_status,
-        stdout,
-        stderr,
-        duration,
-        timestamp,
-        spawn_error: None,
-    }
+    (
+        CommandExecution {
+            command: command.to_string(),
+            args: args.to_vec(),
+            cwd: config.cwd.clone(),
+            exit_status,
+            stdout,
+            stderr,
+            duration,
+            timestamp,
+            spawn_error: None,
+        },
+        stdout_truncated || stderr_truncated,
+    )
 }
 
 #[cfg(test)]

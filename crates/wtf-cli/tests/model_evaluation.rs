@@ -157,6 +157,25 @@ fn run(
     (json, elapsed, code)
 }
 
+fn without_observation_times(value: &Value) -> Value {
+    match value {
+        Value::Object(fields) => Value::Object(
+            fields
+                .iter()
+                .filter_map(|(key, value)| {
+                    if matches!(key.as_str(), "captured_at" | "reported_at" | "observed_at") {
+                        None
+                    } else {
+                        Some((key.clone(), without_observation_times(value)))
+                    }
+                })
+                .collect(),
+        ),
+        Value::Array(items) => Value::Array(items.iter().map(without_observation_times).collect()),
+        _ => value.clone(),
+    }
+}
+
 #[test]
 #[ignore = "requires WTF_MODEL_EVAL_DIR pointing to an already installed local Laya bundle"]
 fn compare_advisory_model_with_identical_deterministic_diagnoses() {
@@ -169,14 +188,14 @@ fn compare_advisory_model_with_identical_deterministic_diagnoses() {
         "model graph must be preinstalled"
     );
 
-    // Distinct fixture families are needed before any claim of generalization. The
-    // holdout here is a frozen smoke sample, not a statistical accuracy estimate.
+    // Split by fixture family. This is a frozen smoke sample, not an estimate of
+    // model generalization: the bundled model was not trained on these fixtures.
     let cases = [
         ("development", Fixture::MissingFile),
         ("development", Fixture::FullFilesystem),
-        ("development", Fixture::DnsLookupFailed),
+        ("development", Fixture::QuotaExceeded),
+        ("holdout", Fixture::DnsLookupFailed),
         ("holdout", Fixture::DnsLookupSucceeded),
-        ("holdout", Fixture::QuotaExceeded),
         ("holdout", Fixture::RefusalNoListener),
         ("holdout", Fixture::RefusalProbeFailed),
     ];
@@ -222,18 +241,19 @@ fn compare_advisory_model_with_identical_deterministic_diagnoses() {
             (second, first)
         };
         assert_eq!(base_exit, model_exit, "{}: exit status", fixture.name());
-        for key in [
-            "category",
-            "status",
-            "summary",
-            "investigation",
-            "evidence",
-            "remedy",
-        ] {
+        for key in ["category", "status", "summary", "evidence", "remedy"] {
             assert_eq!(
                 baseline[key],
                 guided[key],
                 "{}: changed {key}",
+                fixture.name()
+            );
+        }
+        for key in ["investigation", "report"] {
+            assert_eq!(
+                without_observation_times(&baseline[key]),
+                without_observation_times(&guided[key]),
+                "{}: changed {key} beyond observation time",
                 fixture.name()
             );
         }

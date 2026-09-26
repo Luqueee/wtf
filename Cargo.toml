@@ -2,6 +2,7 @@
 members = [
     "crates/wtf-core",
     "crates/wtf-cli",
+    "crates/wtf-train",
 ]
 resolver = "2"
 

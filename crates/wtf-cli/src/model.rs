@@ -310,6 +310,7 @@ mod tests {
                 probe: ProbeId::Listeners,
                 source: "secret source".into(),
                 observation: "SECRET123".into(),
+                observed_at: std::time::SystemTime::now(),
             }],
             ..Investigation::default()
         };

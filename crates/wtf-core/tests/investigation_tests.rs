@@ -116,38 +116,6 @@ fn port_conflict_confirms_live_pid_but_not_from_message_alone() {
 }
 
 #[test]
-fn refused_connection_follows_stopped_container_to_missing_variable() {
-    let execution = failed(
-        "curl",
-        &["http://localhost:8000"],
-        "curl: (7) Failed to connect to localhost port 8000: Connection refused",
-    );
-    let diagnosis = DiagnosisEngine::new().diagnose(&execution);
-    assert_eq!(
-        diagnosis.category.as_deref(),
-        Some("network/connection-refused")
-    );
-    let fixture = FixtureRunner::new(&[if cfg!(target_os = "linux") { "ss" } else { "lsof" }, "docker"], &[
-        (ProbeId::Listeners, ""),
-        (ProbeId::DockerRunning, ""),
-        (ProbeId::DockerAll, "{\"Names\":\"db\",\"Ports\":\"0.0.0.0:8000->80/tcp\",\"Status\":\"Exited (1) 2 minutes ago\"}\n"),
-        (ProbeId::DockerInspect, "{\"Status\":\"exited\",\"ExitCode\":1}|{\"80/tcp\":[{\"HostIp\":\"0.0.0.0\",\"HostPort\":\"8000\"}]}|/db\n"),
-        (ProbeId::DockerLogs, "Error: DATABASE_URL is required\n"),
-    ]);
-    let report = InvestigationEngine::new(fixture).investigate(&execution, &diagnosis);
-    assert_eq!(report.attempts.len(), 5);
-    assert!(report
-        .root_cause
-        .as_deref()
-        .is_some_and(|s| s.contains("Container \"db\" is not running")));
-    assert_eq!(report.cause.as_deref(), Some("DATABASE_URL is missing."));
-    assert!(report
-        .evidence
-        .iter()
-        .any(|e| e.probe == ProbeId::DockerLogs && e.observation.contains("DATABASE_URL")));
-}
-
-#[test]
 fn metadata_only_curl_failure_uses_listener_evidence_without_claiming_refusal() {
     let mut execution = failed("curl", &["localhost:8000"], "");
     execution.exit_status.code = Some(7);
@@ -197,9 +165,6 @@ fn no_listener_is_evidence_not_a_claimed_root_cause() {
         .evidence
         .iter()
         .any(|e| e.observation.contains("no local TCP listener")));
-    assert!(report
-        .render(&diagnosis, &Default::default(), false)
-        .contains("Root cause not confirmed"));
 }
 
 #[test]
@@ -231,34 +196,6 @@ fn truncated_probe_cannot_confirm_listener() {
     assert!(report.root_cause.is_none());
     assert_eq!(report.attempts[0].result, "truncated");
     assert!(report.evidence.is_empty());
-}
-
-#[test]
-fn probe_budget_stops_before_inspect_and_logs() {
-    let execution = failed("curl", &["http://localhost:8000"], "Connection refused");
-    let diagnosis = DiagnosisEngine::new().diagnose(&execution);
-    let fixture = FixtureRunner::new(
-        &[
-            if cfg!(target_os = "linux") {
-                "ss"
-            } else {
-                "lsof"
-            },
-            "docker",
-        ],
-        &[
-            (ProbeId::Listeners, ""),
-            (ProbeId::DockerRunning, ""),
-            (
-                ProbeId::DockerAll,
-                "{\"Names\":\"db\",\"Ports\":\"0.0.0.0:8000->80/tcp\",\"Status\":\"Exited (1)\"}",
-            ),
-        ],
-    );
-    let report = InvestigationEngine::with_budget(fixture, 2, Duration::from_secs(2))
-        .investigate(&execution, &diagnosis);
-    assert!(report.root_cause.is_none());
-    assert_eq!(report.attempts.len(), 2);
 }
 
 #[test]
@@ -403,7 +340,7 @@ fn file_absence_requires_corresponding_stat_error() {
 }
 
 #[test]
-fn git_changes_are_not_claimed_to_cause_an_unrelated_failure() {
+fn git_changes_in_unrelated_repo_are_not_probed_for_a_failure() {
     let mut execution = failed("git", &["fetch"], "fatal: invalid refspec");
     let cwd = std::env::temp_dir().join(format!(
         "wtf-fixture-{}-{}",
@@ -416,63 +353,36 @@ fn git_changes_are_not_claimed_to_cause_an_unrelated_failure() {
     std::fs::create_dir_all(cwd.join(".git")).unwrap();
     execution.cwd = PathBuf::from(&cwd);
     let diagnosis = DiagnosisEngine::new().diagnose(&execution);
-    let fixture = FixtureRunner::new(
-        &["git"],
-        &[
-            (ProbeId::GitStatus, " M config.toml"),
-            (ProbeId::GitDiff, " config.toml | 1 +"),
-        ],
-    );
+    let fixture = FixtureRunner::new(&["git"], &[]);
     let report = InvestigationEngine::new(fixture).investigate(&execution, &diagnosis);
     std::fs::remove_dir_all(&cwd).unwrap();
     assert!(report.root_cause.is_none());
-    assert_eq!(
-        report.attempts.iter().map(|a| a.probe).collect::<Vec<_>>(),
-        [ProbeId::GitStatus, ProbeId::GitDiff]
+    assert!(
+        report.attempts.is_empty(),
+        "Git changes in cwd cannot explain an unrelated fetch error"
     );
+    assert!(report.evidence.is_empty());
 }
 
 #[test]
-fn shell_cargo_compiler_diagnostic_reaches_existing_diagnosis_and_evidence() {
-    let project = tempfile::tempdir().unwrap();
-    std::fs::write(
-        project.path().join("Cargo.toml"),
-        "[package]\nname=\"probe-fixture\"\nversion=\"0.1.0\"\nedition=\"2021\"\n",
-    )
-    .unwrap();
-    let mut execution = failed("/usr/bin/cargo", &["build"], "");
-    execution.cwd = project.path().into();
+fn shell_cargo_failure_stays_unknown_without_automatic_cargo_check() {
+    let execution = failed("/usr/bin/cargo", &["build"], "");
     let mut diagnosis = DiagnosisEngine::new().diagnose(&execution);
-    let compiler = serde_json::json!({
-        "reason": "compiler-message",
-        "message": {
-            "level": "error",
-            "message": "mismatched types",
-            "code": {"code": "E0308"},
-            "spans": [{"file_name": "src/api.rs", "line_start": 84, "column_start": 9, "is_primary": true}]
-        }
-    });
-    let output = format!("{compiler}\n");
-    let mut fixture = FixtureRunner::new(&["cargo"], &[]);
-    fixture.output.insert(
-        ProbeId::CargoCheck,
-        ProbeOutput {
-            stdout: output,
-            stderr: String::new(),
-            exit_code: Some(101),
-            truncated: false,
-        },
-    );
+    let fixture = FixtureRunner::new(&["cargo"], &[]);
     let report =
         InvestigationEngine::new(fixture).investigate_reconstructed(&execution, &mut diagnosis);
-    assert_eq!(diagnosis.summary, "Rust compilation failed.");
-    assert!(report
-        .root_cause
-        .as_deref()
-        .is_some_and(|s| s.contains("src/api.rs:84")));
-    assert!(report
-        .evidence
-        .iter()
-        .any(|e| e.observation.contains("E0308")));
+
+    assert_eq!(
+        diagnosis.status,
+        wtf_core::diagnosis::DiagnosisStatus::Unknown
+    );
+    assert_eq!(diagnosis.category.as_deref(), Some("unknown"));
+    assert!(report.root_cause.is_none());
+    assert!(report.evidence.is_empty());
+    assert!(report.attempts.is_empty());
     assert_eq!(report.adapter, Some("cargo"));
+    assert!(report
+        .reconstruction_note
+        .as_deref()
+        .is_some_and(|note| note.contains("automatic Cargo checks are not run")));
 }

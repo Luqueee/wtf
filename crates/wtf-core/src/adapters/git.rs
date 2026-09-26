@@ -1,4 +1,6 @@
 use crate::capture::CommandExecution;
+#[cfg(feature = "counterfactual-replay")]
+use crate::investigation::{GitReplayPoint, GitReplayPrior};
 use crate::probes::{ProbeId, ProbeRunner};
 
 use super::{AdapterContext, AdapterEvidence, AdapterResult, Finding};
@@ -7,6 +9,33 @@ pub(super) fn collect<R: ProbeRunner>(
     failure: &CommandExecution,
     context: &mut AdapterContext<'_, R>,
 ) -> AdapterResult {
+    collect_ordered(failure, context, None, |_| true)
+}
+
+#[cfg(feature = "counterfactual-replay")]
+pub(super) fn collect_replay<R: ProbeRunner>(
+    failure: &CommandExecution,
+    context: &mut AdapterContext<'_, R>,
+    first: ProbeId,
+) -> (AdapterResult, Option<GitReplayPoint>) {
+    let mut point = None;
+    let result = collect_ordered(failure, context, Some(first), |context| {
+        point = replay_point(context);
+        point.is_some()
+    });
+    (result, point)
+}
+
+fn collect_ordered<'a, R, F>(
+    failure: &CommandExecution,
+    context: &mut AdapterContext<'a, R>,
+    replay_first: Option<ProbeId>,
+    mut capture_point: F,
+) -> AdapterResult
+where
+    R: ProbeRunner,
+    F: FnMut(&AdapterContext<'a, R>) -> bool,
+{
     let Some(subcommand) = failure.args.first().map(String::as_str) else {
         return unknown("Git failure has no recognized subcommand.");
     };
@@ -115,8 +144,28 @@ pub(super) fn collect<R: ProbeRunner>(
                             .into(),
                         });
                         if !upstream.ok() {
-                            let remote = context.run(ProbeId::GitRemote, None);
-                            let status = context.run(ProbeId::GitPorcelain, None);
+                            let order = if let Some(first) = replay_first {
+                                if !capture_point(context) {
+                                    return result;
+                                }
+                                let second = match first {
+                                    ProbeId::GitRemote => ProbeId::GitPorcelain,
+                                    ProbeId::GitPorcelain => ProbeId::GitRemote,
+                                    _ => return result,
+                                };
+                                [first, second]
+                            } else {
+                                [ProbeId::GitRemote, ProbeId::GitPorcelain]
+                            };
+                            let mut remote = None;
+                            let mut status = None;
+                            for probe in order {
+                                match probe {
+                                    ProbeId::GitRemote => remote = context.run(probe, None),
+                                    ProbeId::GitPorcelain => status = context.run(probe, None),
+                                    _ => unreachable!("Git replay choice is fixed"),
+                                }
+                            }
                             let has_remote = remote.as_ref().is_some_and(|out| {
                                 out.ok() && !out.truncated && !out.stdout.trim().is_empty()
                             });
@@ -148,6 +197,46 @@ pub(super) fn collect<R: ProbeRunner>(
     result
 }
 
+#[cfg(feature = "counterfactual-replay")]
+fn replay_point<R: ProbeRunner>(context: &AdapterContext<'_, R>) -> Option<GitReplayPoint> {
+    let offered = [ProbeId::GitRemote, ProbeId::GitPorcelain];
+    if !context.replay_probes_ready(offered) {
+        return None;
+    }
+
+    let expected = [
+        ProbeId::GitTopLevel,
+        ProbeId::GitBranch,
+        ProbeId::GitUpstream,
+    ];
+    let prior = context
+        .attempts
+        .iter()
+        .filter(|attempt| expected.contains(&attempt.probe))
+        .map(|attempt| GitReplayPrior {
+            probe: attempt.probe,
+            outcome: replay_outcome(&attempt.result),
+        })
+        .collect::<Vec<_>>();
+    if prior.len() != expected.len() || !prior.iter().map(|attempt| attempt.probe).eq(expected) {
+        return None;
+    }
+
+    Some(GitReplayPoint { offered, prior })
+}
+
+#[cfg(feature = "counterfactual-replay")]
+fn replay_outcome(attempt: &str) -> &'static str {
+    match attempt {
+        "ok" => "available",
+        "unavailable" => "unavailable",
+        "truncated" => "truncated",
+        "probe exceeded its deadline" => "timeout",
+        value if value.starts_with("probe unavailable:") => "unavailable",
+        _ => "failed",
+    }
+}
+
 fn is_detached(status: &str) -> bool {
     status
         .lines()
@@ -172,6 +261,23 @@ mod tests {
     use crate::probes::{ProbeError, ProbeOutput, ProbeSpec};
 
     use super::*;
+
+    #[cfg(feature = "counterfactual-replay")]
+    #[test]
+    fn replay_prior_statuses_use_the_fixed_training_vocabulary() {
+        assert_eq!(super::replay_outcome("ok"), "available");
+        assert_eq!(super::replay_outcome("unavailable"), "unavailable");
+        assert_eq!(
+            super::replay_outcome("probe unavailable: missing"),
+            "unavailable"
+        );
+        assert_eq!(
+            super::replay_outcome("probe exceeded its deadline"),
+            "timeout"
+        );
+        assert_eq!(super::replay_outcome("truncated"), "truncated");
+        assert_eq!(super::replay_outcome("exit 128"), "failed");
+    }
 
     #[derive(Default)]
     struct FixtureRunner {

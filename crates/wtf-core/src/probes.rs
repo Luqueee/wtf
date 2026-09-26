@@ -24,6 +24,8 @@ pub enum ProbeId {
     Filesystem,
     FilesystemInodes,
     Stat,
+    #[cfg(feature = "counterfactual-replay")]
+    UnixListeners,
     Process,
     DockerRunning,
     DockerAll,
@@ -33,6 +35,7 @@ pub enum ProbeId {
     SystemdLogs,
     GitStatus,
     GitDiff,
+    // Retained for training validation; this probe is not executable.
     CargoCheck,
     GitPorcelain,
     GitBranch,
@@ -135,6 +138,21 @@ impl ProbeSpec {
                 #[cfg(not(any(target_os = "linux", target_os = "macos")))]
                 return None;
                 ("file metadata", "stat", args, "metadata")
+            }
+            #[cfg(feature = "counterfactual-replay")]
+            ProbeId::UnixListeners => {
+                #[cfg(target_os = "linux")]
+                {
+                    let path = target.filter(|path| valid_unix_socket_path(path))?;
+                    (
+                        "Unix domain socket listeners",
+                        "ss",
+                        vec!["-xlnH".into(), "src".into(), path.into()],
+                        "unix-listener",
+                    )
+                }
+                #[cfg(not(target_os = "linux"))]
+                return None;
             }
             ProbeId::Process => {
                 let pid = target?.parse::<u32>().ok()?.to_string();
@@ -252,16 +270,7 @@ impl ProbeSpec {
                 vec!["diff".into(), "--no-ext-diff".into(), "--stat".into()],
                 "changes",
             ),
-            ProbeId::CargoCheck => (
-                "Rust compile diagnostics",
-                "cargo",
-                vec![
-                    "check".into(),
-                    "--offline".into(),
-                    "--message-format=json".into(),
-                ],
-                "compiler-diagnostic",
-            ),
+            ProbeId::CargoCheck => return None,
             ProbeId::GitPorcelain => (
                 "repository conflicts and branch status",
                 "git",
@@ -303,13 +312,15 @@ impl ProbeSpec {
             ProbeId::Hosts | ProbeId::Route => &["remote_connectivity"],
             ProbeId::Filesystem | ProbeId::FilesystemInodes => &["filesystem_full"],
             ProbeId::Stat => &["file_absent", "permission_mismatch", "docker_daemon"],
+            #[cfg(feature = "counterfactual-replay")]
+            ProbeId::UnixListeners => &[],
             ProbeId::Process => &["port_owner"],
             ProbeId::DockerRunning => &["container_exited", "docker_port_conflict"],
             ProbeId::DockerAll | ProbeId::DockerInspect => &["container_exited"],
             ProbeId::DockerLogs => &["missing_env", "container_exited"],
             ProbeId::SystemdShow | ProbeId::SystemdLogs => &["service_failed"],
             ProbeId::GitStatus | ProbeId::GitDiff => &["recent_changes"],
-            ProbeId::CargoCheck => &["rust_compile_error"],
+            ProbeId::CargoCheck => return None,
             ProbeId::GitPorcelain
             | ProbeId::GitBranch
             | ProbeId::GitUpstream
@@ -322,16 +333,19 @@ impl ProbeSpec {
             program,
             args,
             cwd: cwd.to_path_buf(),
-            timeout: if id == ProbeId::CargoCheck {
-                Duration::from_secs(12)
-            } else {
-                Duration::from_millis(500)
-            },
+            timeout: Duration::from_millis(500),
             safety: ProbeSafety::Safe,
             evidence_kind,
             useful_for,
         })
     }
+}
+
+#[cfg(all(feature = "counterfactual-replay", target_os = "linux"))]
+fn valid_unix_socket_path(path: &str) -> bool {
+    Path::new(path).is_absolute()
+        && path.len() <= 107
+        && !path.bytes().any(|byte| matches!(byte, 0 | b'\n' | b'\r'))
 }
 
 fn valid_name(s: &str) -> bool {
@@ -450,6 +464,8 @@ impl ProbeRunner for LocalProbeRunner {
             | ProbeId::DockerLogs
             | ProbeId::SystemdShow => spec.args.last().map(String::as_str),
             ProbeId::SystemdLogs => log_target.as_deref(),
+            #[cfg(feature = "counterfactual-replay")]
+            ProbeId::UnixListeners => spec.args.last().map(String::as_str),
             _ => None,
         };
         let expected = ProbeSpec::new(spec.id, &spec.cwd, target);
@@ -469,11 +485,7 @@ impl ProbeRunner for LocalProbeRunner {
             spec.program,
             &spec.args,
             &spec.cwd,
-            spec.timeout.min(if spec.id == ProbeId::CargoCheck {
-                Duration::from_secs(12)
-            } else {
-                Duration::from_millis(500)
-            }),
+            spec.timeout.min(Duration::from_millis(500)),
         )
     }
 }
@@ -501,11 +513,7 @@ fn run_bounded(
     let stderr = child.stderr.take().expect("piped stderr");
     let (out_tx, out_rx) = mpsc::sync_channel(1);
     let (err_tx, err_rx) = mpsc::sync_channel(1);
-    let stdout_limit = if program == "cargo" {
-        128 * 1024
-    } else {
-        16 * 1024
-    };
+    let stdout_limit = 16 * 1024;
     thread::spawn(move || {
         let _ = out_tx.send(drain_stream_bounded(stdout, stdout_limit));
     });
@@ -570,6 +578,31 @@ mod tests {
     }
 
     #[test]
+    fn cargo_check_cannot_run_as_an_automatic_probe() {
+        assert!(ProbeSpec::new(ProbeId::CargoCheck, Path::new("."), None).is_none());
+
+        let forged = ProbeSpec {
+            id: ProbeId::CargoCheck,
+            description: "Rust compile diagnostics",
+            program: "cargo",
+            args: vec![
+                "check".into(),
+                "--offline".into(),
+                "--message-format=json".into(),
+            ],
+            cwd: Path::new(".").to_path_buf(),
+            timeout: Duration::from_secs(12),
+            safety: ProbeSafety::Safe,
+            evidence_kind: "compiler-diagnostic",
+            useful_for: &["rust_compile_error"],
+        };
+        assert!(matches!(
+            LocalProbeRunner.run(&forged),
+            Err(ProbeError::Unsafe)
+        ));
+    }
+
+    #[test]
     fn rejects_flag_injection_and_forged_probe_args() {
         assert!(ProbeSpec::new(
             ProbeId::DockerInspect,
@@ -616,5 +649,55 @@ mod tests {
         );
         assert!(matches!(result, Err(ProbeError::Timeout)));
         assert!(started.elapsed() < Duration::from_secs(1));
+    }
+    #[cfg(all(feature = "counterfactual-replay", target_os = "linux"))]
+    #[test]
+    fn unix_listener_probe_is_fixed_and_validates_pathname_bounds() {
+        let valid = ProbeSpec::new(
+            ProbeId::UnixListeners,
+            Path::new("/fixture"),
+            Some("/tmp/example.sock"),
+        )
+        .expect("valid pathname");
+        assert_eq!(valid.program, "ss");
+        assert_eq!(
+            valid.args,
+            vec![
+                "-xlnH".to_owned(),
+                "src".to_owned(),
+                "/tmp/example.sock".to_owned()
+            ]
+        );
+        assert_eq!(valid.timeout, Duration::from_millis(500));
+        assert_eq!(valid.safety, ProbeSafety::Safe);
+        assert!(!valid.args.iter().any(|arg| arg == "-p" || arg == "-K"));
+
+        let max_length_path = format!("/{}", "x".repeat(106));
+        assert_eq!(max_length_path.len(), 107);
+        assert!(ProbeSpec::new(
+            ProbeId::UnixListeners,
+            Path::new("/fixture"),
+            Some(&max_length_path)
+        )
+        .is_some());
+
+        for invalid in [
+            "relative.sock".to_owned(),
+            "/tmp/new\nline.sock".to_owned(),
+            "/tmp/new\rline.sock".to_owned(),
+            "/tmp/nul\0sock".to_owned(),
+            format!("/{}", "x".repeat(107)),
+        ] {
+            assert!(
+                ProbeSpec::new(
+                    ProbeId::UnixListeners,
+                    Path::new("/fixture"),
+                    Some(&invalid)
+                )
+                .is_none(),
+                "accepted an invalid pathname"
+            );
+        }
+        assert!(ProbeSpec::new(ProbeId::UnixListeners, Path::new("/fixture"), None).is_none());
     }
 }

@@ -82,7 +82,7 @@ fn assert_confirmed_root(json: &Value, category: &str, root_cause: &str) {
 }
 
 #[test]
-fn cargo_test_runtime_failure_is_not_mislabeled_as_compilation() {
+fn cargo_test_runtime_failure_stays_unknown_without_automatic_check() {
     let sandbox = Sandbox::new();
     sandbox.install_bash();
     write_cargo_fixture(
@@ -120,25 +120,18 @@ fn cargo_test_runtime_failure_is_not_mislabeled_as_compilation() {
     assert!(
         json["investigation"]["reconstruction_note"]
             .as_str()
-            .is_some_and(|note| note.contains("runtime test")),
-        "a passing cargo check must not explain a runtime test failure: {json}"
+            .is_some_and(|note| note.contains("automatic Cargo checks are not run")),
+        "diagnosis must explain why the uncaptured Cargo failure stays unknown: {json}"
     );
-    let attempts = json["investigation"]["attempts"]
-        .as_array()
-        .expect("Cargo probe attempts");
-    assert_eq!(attempts.len(), 1, "diagnosis: {json}");
-    assert_eq!(attempts[0]["probe"], "CargoCheck");
-    assert_eq!(attempts[0]["result"], "ok");
-    assert!(
-        json["investigation"]["evidence"]
-            .as_array()
-            .is_some_and(|evidence| evidence.iter().any(|item| {
-                item["probe"] == "CargoCheck"
-                    && item["observation"]
-                        .as_str()
-                        .is_some_and(|observation| observation.contains("cargo check completed"))
-            })),
-        "diagnosis should expose the successful check that did not explain the test failure: {json}"
+    assert_eq!(
+        json["investigation"]["attempts"].as_array().map(Vec::len),
+        Some(0),
+        "automatic investigation must not run cargo check: {json}"
+    );
+    assert_eq!(
+        json["investigation"]["evidence"].as_array().map(Vec::len),
+        Some(0),
+        "an uncaptured failure must not fabricate Cargo compiler evidence: {json}"
     );
 }
 
@@ -184,7 +177,7 @@ fn unsupported_cargo_flags_remain_unknown_without_compile_probes() {
     assert!(
         json["investigation"]["reconstruction_note"]
             .as_str()
-            .is_some_and(|note| note.contains("Cargo flags or package selection")),
+            .is_some_and(|note| note.contains("automatic Cargo checks are not run")),
         "unsupported arguments must not be converted into a compile diagnosis: {json}"
     );
     assert_eq!(

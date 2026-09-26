@@ -100,6 +100,7 @@ pub(super) fn request_target(args: &[String]) -> Option<(String, u16, bool)> {
                 | "--write-out"
                 | "--connect-timeout"
                 | "--max-time"
+                | "--noproxy"
         ) {
             index += 2;
             continue;
@@ -255,6 +256,35 @@ mod tests {
         assert!(!exposed.contains("secret"));
         assert!(!exposed.contains("payload"));
         assert!(!exposed.contains("/path"));
+    }
+
+    #[test]
+    fn noproxy_argument_does_not_hide_the_local_url_from_the_listener_check() {
+        let runner = Fixture {
+            responses: vec![(ProbeId::Listeners, out(""))],
+            calls: RefCell::default(),
+        };
+        let mut context = context(&runner);
+        let result = collect(
+            &execution(
+                &[
+                    "--noproxy",
+                    "*",
+                    "--connect-timeout",
+                    "2",
+                    "--max-time",
+                    "3",
+                    "http://127.0.0.1:1/",
+                ],
+                7,
+            ),
+            &mut context,
+        );
+        assert!(matches!(
+            result.finding,
+            Some(Finding::CurlNoListener { port: 1 })
+        ));
+        assert_eq!(&*runner.calls.borrow(), &[ProbeId::Listeners]);
     }
 
     #[test]

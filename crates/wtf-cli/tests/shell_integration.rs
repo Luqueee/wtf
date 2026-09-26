@@ -185,6 +185,10 @@ impl IsolatedShell {
             fs::set_permissions(directory, fs::Permissions::from_mode(0o700))
                 .expect("secure isolated shell directory");
         }
+        let state = runtime.join("wtf");
+        fs::create_dir(&state).expect("create isolated WTF state");
+        fs::set_permissions(&state, fs::Permissions::from_mode(0o700))
+            .expect("secure isolated WTF state");
         Self {
             _temp: temp,
             home,
@@ -364,7 +368,7 @@ fn assert_working_directory(isolated: &IsolatedShell) {
     let output = String::from_utf8_lossy(&bytes);
     let displayed_path = output
         .lines()
-        .find_map(|line| line.strip_prefix("Working directory: "))
+        .find_map(|line| line.strip_prefix("   working directory: "))
         .expect("verbose diagnosis should include the working directory");
     let displayed_path = Path::new(displayed_path)
         .canonicalize()
