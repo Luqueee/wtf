@@ -320,6 +320,76 @@ unknown                0.03
 firewall               0.01
 ```
 
+### Implemented default behavior
+
+After bounded deterministic investigation, WTF runs a local Laya ONNX choice
+decision by default if there are unconfirmed candidate hypotheses. On first
+eligible use, it downloads the pinned model graph, external weights, tokenizer
+and calibration from Hugging Face over HTTPS into a private versioned XDG
+cache. Each asset is size/SHA-256 verified before atomic publication; later
+uses load the cached bundle without another request. `--no-model` or
+`WTF_NO_MODEL=1` disables download and inference; `--model-dir DIR` chooses a
+preinstalled local bundle. Only allowlisted category, hypothesis
+identifiers/statuses, and probe identifiers/outcomes are supplied to the
+model; command text, captured output, paths, and raw probe observations do
+not enter inference or leave the machine. Non-rejected hypotheses and
+`unknown` are its only choices. Scores are advisory: a non-unknown option is
+preferred only at or above 0.80, and neither diagnosis status nor root cause
+changes. When there are no hypotheses or a root is confirmed, inference and
+download are skipped. An unavailable download or invalid artifact yields a
+visible model error without replacing the deterministic diagnosis or exit
+status. The current path loads weights per eligible invocation; `wtfd` and
+model-guided probe selection in the architecture below are not implemented.
+
+Current block and inode reports below full on the same mount contradict
+the *current* `filesystem_full` hypothesis. Both must be complete and
+parseable; a failed, truncated, malformed, or mismatched probe does not
+reject it. This does not identify the historical cause or change the
+diagnosis status, but if no other non-rejected hypothesis remains,
+inference is skipped rather than recommending a disproven candidate.
+
+### Proposed recommendation target (not implemented)
+
+The next decision task is **which safe check to perform next**, or
+**abstain**. It is not a request to name an unverified root cause or
+generate a fix. This task is separate from today's post-investigation
+advisory hypothesis ranking:
+
+```text
+input:  current allowlisted diagnostic state + engine-offered ready ProbeIds
+output: one offered ProbeId | abstain
+```
+
+The deterministic investigation engine alone constructs the offered
+`ProbeSpec`s, including target, fixed arguments, working directory,
+prerequisite evidence, safety, and remaining budget. Offer only probes
+that the same diagnosis path could already run; never let the model
+create commands, expand probe scope, select targets, replay the original
+action, or bypass dependency order (for example, inspect a container
+only after identifying a matching one). Exclude `CargoCheck` from this
+automatic choice despite its catalogue designation: it can execute
+build scripts/procedural macros and write artifacts. If there are fewer
+than two independent ready checks, no model decision is needed.
+
+An abstention, invalid/out-of-set choice, unavailable model, or inference
+timeout preserves the existing deterministic probe order. Abstention
+does **not** end investigation while useful authorized probes remain.
+Cold-start model downloads must not occur inside the probe deadline;
+inference time counts against the existing probe/time budgets. Input
+remains limited to fixed identifiers and verified, payload-free facts,
+never raw output, paths, logs, or free-form command text. The engine
+alone interprets probe results, updates hypotheses, confirms a root,
+and selects an existing structured remedy. The model cannot execute
+fixes or change status, evidence, or root cause from a score.
+
+This section creates no training examples and changes no runtime behavior.
+Training-data design is a separate step. Before enabling model-guided
+execution, evaluate independently labeled, family-separated failures
+with deterministic baseline misses: ordering authorized checks must
+improve *confirmed correct roots*, without more false confirmations,
+forbidden probes, or budget overruns. A better-looking hypothesis score
+or more abstentions alone is not a gain.
+
 ---
 
 # 8. High-Level Architecture
@@ -448,9 +518,15 @@ Shell hooks do **not** retain stdout or stderr and never launch a diagnosis or p
 
 ### Phase 4 behavior
 
-For output-free shell failures, `wtf` selects a built-in diagnostic adapter by executable basename (including absolute paths). Cargo, Git, curl, and Docker adapters reconstruct current evidence through the existing bounded, fixed-argv probe catalogue; the original action is never replayed. Explicit `wtf -- <command>` continues to use captured output and the existing detectors. Normal output shows the finding, supported cause (or unknown), and concise evidence; `--verbose` additionally lists the selected adapter, probe attempts, and hypotheses. JSON retains the original diagnosis shape and adds optional investigation adapter metadata.
+For output-free shell failures, `wtf` selects a built-in diagnostic adapter by executable basename (including absolute paths). Cargo, Git, curl, Docker, and Linux systemd adapters reconstruct current evidence through the existing bounded, fixed-argv probe catalogue; the original action is never replayed. Explicit `wtf -- <command>` uses captured output and the existing detectors, with safe additional probes for supported `systemctl start`, Docker bind-mount, Docker published-port, and local Docker Unix socket failures. Normal output shows the finding, supported cause (or unknown), and concise evidence; `--verbose` additionally lists the selected adapter, probe attempts, and hypotheses. JSON retains the original diagnosis shape and adds optional investigation adapter metadata.
 
-Cargo checks compilation offline with structured rustc JSON only for plain `build`, `check`, `test`, or `run` in simple local packages without detected build scripts, procedural macros, or workspaces; flags/package selection and passing checks do not explain a failed test or run. Dependency build scripts and proc macros can still execute, and `cargo check` writes build artifacts: do not treat it as read-only in untrusted projects. Git reads porcelain status, branch, upstream, and remote **names** (never remote URLs) without invoking push/pull/merge/rebase/commit; upstream diagnosis requires a committed branch and a configured remote. Curl never reissues HTTP requests, regardless of method; it inspects local listeners or host resolution instead. Docker reads state and bounded logs only for an explicit `docker run --name` container whose creation time matches the failed command; it never starts or runs containers. Docker image entities skip known option values, and unknown option forms remain unclassified rather than being mislabeled as an image. Docker API connection errors are reported as daemon unavailable without claiming a confirmed root cause. Invalid output, unavailable tools, timeouts, and unsupported variants yield an unconfirmed cause rather than a fabricated explanation. Probe output is transient and is never persisted by the shell hook.
+Cargo checks compilation offline with structured rustc JSON only for plain `build`, `check`, `test`, or `run` in simple local packages without detected build scripts, procedural macros, or workspaces; flags/package selection and passing checks do not explain a failed test or run. Dependency build scripts and proc macros can still execute, and `cargo check` writes build artifacts: do not treat it as read-only in untrusted projects. Git reads porcelain status, branch, upstream, and remote **names** (never remote URLs) without invoking push/pull/merge/rebase/commit; upstream diagnosis requires a committed branch and a configured remote. Curl never reissues HTTP requests, regardless of method; it inspects local listeners or host resolution instead. Docker reads state and bounded logs only for an explicit `docker run --name` container whose creation time matches the failed command; it never starts or runs containers. Docker image entities skip known option values, and unknown option forms remain unclassified rather than being mislabeled as an image. A Docker API probe failure alone no longer diagnoses why the original command failed; only a captured local Unix socket error corroborated by bounded local `stat` can confirm an absent socket. Invalid output, unavailable tools, timeouts, and unsupported variants yield an unconfirmed cause rather than a fabricated explanation. Probe output is transient and is never persisted by the shell hook.
+
+An explicit Docker bind-source failure is confirmed only for a single named `docker run --mount type=bind` whose captured daemon error names the exact requested absolute source and a fixed-argument local `stat` reports that source missing. Docker can reject the mount before creating a container, so output-free shell metadata cannot establish this cause. Mismatched, ambiguous, absent, unavailable, or truncated evidence remains unconfirmed; `-v`/`--volume` is not treated as equivalent because it may create a missing source directory.
+
+An explicit `docker run` TCP/IPv4 published-port conflict requires one requested host mapping, Docker's exit code 125, a daemon bind error naming that exact host socket, and one running container with a conflicting published binding predating the command. Only then is the owner confirmed through bounded `docker ps`; unknown, mismatched, multiple, future, or unsupported bindings remain unconfirmed. Metadata-only shell failures cannot recover the daemon error, and diagnostic probes never repeat `docker run`.
+
+An explicit failed Docker command can confirm `container/daemon` only when its captured error identifies one safe absolute Unix socket path and a bounded local `stat` independently reports that path missing. The diagnosis does not expose the socket path in its root or investigation evidence, nor repeat Docker. A currently present socket does not prove the daemon is reachable; permission errors, remote endpoints, global context/host flags, malformed or mismatched paths, and missing or truncated probe evidence remain unconfirmed. Output-free shell records do not establish the original daemon error, even if a later `docker ps` probe also fails.
 
 ---
 
@@ -937,7 +1013,7 @@ Recent changes are evidence, not proof.
 By default, WTF:
 
 ```text
-does not send information over the Internet
+does not upload command, output, path, or probe contents (first eligible use downloads a fixed model bundle over HTTPS)
 does not persist stdout
 does not persist stderr
 does not persist environment variables
@@ -1234,6 +1310,25 @@ The MVP can be considered successful when:
 10. On the initial dataset, it achieves meaningfully better
     root-cause accuracy than deterministic heuristics alone.
 ```
+
+Current evidence for criterion 10: not established. The opt-in offline
+`crates/wtf-cli/tests/model_evaluation.rs` compares identical sandboxed
+diagnoses with `--no-model` and an already installed Laya bundle. Its
+seven-case exploratory sample has two roots already confirmed without
+Laya, one scripted quota failure with a known alternative cause, and
+three eligible model decisions without independently verified historical
+roots. In the quota case, Laya advised `filesystem_full` at 0.854 before
+the investigation rejected it with matching, non-full block and inode
+reports. Adding those two facts to Laya's input did not reliably prevent
+the false advice, so that input change was discarded. Model scores
+remain advisory, and no root-cause accuracy gain over deterministic
+investigation has been demonstrated. Before model-guided probes,
+evaluate paired runs on a larger family-disjoint holdout with known
+causes and deterministic baseline misses; require improved confirmed
+root-cause yield without false confirmations, unauthorized probes, or
+budget regressions. Only the deterministic engine may construct eligible
+probes and confirm roots from their evidence; absent evidence of benefit,
+retain the current fixed probe order and advisory model role.
 
 ---
 

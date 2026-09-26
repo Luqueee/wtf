@@ -7,6 +7,7 @@ use crate::normalizer::NormalizedOutput;
 pub mod command_not_found;
 pub mod connection_refused;
 pub mod disk_full;
+pub mod dns_failure;
 pub mod file_not_found;
 pub mod permission_denied;
 pub mod port_conflict;
@@ -14,6 +15,7 @@ pub mod port_conflict;
 pub use command_not_found::CommandNotFoundDetector;
 pub use connection_refused::ConnectionRefusedDetector;
 pub use disk_full::DiskFullDetector;
+pub use dns_failure::DnsFailureDetector;
 pub use file_not_found::FileNotFoundDetector;
 pub use permission_denied::PermissionDeniedDetector;
 pub use port_conflict::PortConflictDetector;
@@ -52,6 +54,7 @@ pub fn default_detectors() -> Vec<Box<dyn Detector>> {
         Box::new(PortConflictDetector),
         Box::new(ConnectionRefusedDetector),
         Box::new(DiskFullDetector),
+        Box::new(DnsFailureDetector),
     ]
 }
 

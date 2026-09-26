@@ -126,7 +126,14 @@ impl DiagnosisEngine {
         });
 
         if let Some(best) = candidates.into_iter().next() {
-            let status = if best.confidence >= 0.9 {
+            // A matching error message identifies a symptom, not necessarily its cause.
+            // OS spawn failures directly establish an unavailable executable or EACCES.
+            let direct_spawn_failure = execution.spawn_error.is_some()
+                && matches!(
+                    (execution.exit_code(), best.category.as_str()),
+                    (Some(127), "command/not-found") | (Some(126), "filesystem/permission-denied")
+                );
+            let status = if direct_spawn_failure {
                 DiagnosisStatus::Confirmed
             } else {
                 DiagnosisStatus::Likely
@@ -309,7 +316,7 @@ mod tests {
     }
 
     #[test]
-    fn test_diagnose_file_not_found_render() {
+    fn file_not_found_message_does_not_confirm_cause() {
         let exec = make_test_exec(
             "cat",
             &["/foo/bar"],
@@ -319,19 +326,16 @@ mod tests {
         );
         let engine = DiagnosisEngine::new();
         let diag = engine.diagnose(&exec);
-        assert_eq!(diag.status, DiagnosisStatus::Confirmed);
-        assert_eq!(diag.summary, "File does not exist.");
-
-        let rendered = DiagnosisEngine::render(&diag, &RenderOptions::plain());
-        assert!(rendered.starts_with("✗ File does not exist.\n"));
-        assert!(rendered.contains("Evidence:\n  cat: /foo/bar: No such file or directory\n"));
-        assert!(
-            rendered.contains("Detected:\n  path: /foo/bar\n  category: filesystem/not-found\n")
+        assert_eq!(diag.status, DiagnosisStatus::Likely);
+        assert_eq!(diag.category.as_deref(), Some("filesystem/not-found"));
+        assert_eq!(
+            diag.entities.primary_path(),
+            Some(&PathBuf::from("/foo/bar"))
         );
     }
 
     #[test]
-    fn test_diagnose_port_conflict_render() {
+    fn port_conflict_message_does_not_confirm_listener() {
         let exec = make_test_exec(
             "docker",
             &["run", "-p", "8080:80", "nginx"],
@@ -341,13 +345,9 @@ mod tests {
         );
         let engine = DiagnosisEngine::new();
         let diag = engine.diagnose(&exec);
-        assert_eq!(diag.status, DiagnosisStatus::Confirmed);
-        assert_eq!(diag.summary, "Port 8080 is already in use.");
-
-        let rendered = DiagnosisEngine::render(&diag, &RenderOptions::plain());
-        assert!(rendered.starts_with("✗ Port 8080 is already in use.\n"));
-        assert!(rendered.contains("Evidence:\n  bind: address already in use\n"));
-        assert!(rendered.contains("Detected:\n  port: 8080\n  category: network/port-conflict\n"));
+        assert_eq!(diag.status, DiagnosisStatus::Likely);
+        assert_eq!(diag.category.as_deref(), Some("network/port-conflict"));
+        assert_eq!(diag.entities.primary_port(), Some(8080));
     }
 
     #[test]

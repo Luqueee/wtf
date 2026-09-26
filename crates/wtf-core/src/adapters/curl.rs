@@ -35,21 +35,27 @@ pub(super) fn collect<R: ProbeRunner>(
             result.finding = Some(Finding::CurlNoListener { port });
         }
     } else if !local && host.parse::<IpAddr>().is_err() {
+        if failure.exit_code() == Some(6) {
+            result.finding = Some(Finding::CurlDnsFailure { host: host.clone() });
+        }
         if let Some(output) = context
             .run(ProbeId::Hosts, Some(&host))
             .filter(|output| !output.truncated)
         {
-            let resolved = !output.stdout.trim().is_empty();
-            result.evidence.push(AdapterEvidence {
-                probe: ProbeId::Hosts,
-                observation: if resolved {
-                    "the remote hostname resolved locally".into()
-                } else {
-                    "the remote hostname did not resolve locally".into()
-                },
-            });
-            if !resolved && failure.exit_code() == Some(6) {
-                result.finding = Some(Finding::CurlDnsFailure { host });
+            let observation = if output.ok() && !output.stdout.trim().is_empty() {
+                Some("the hostname currently resolves locally")
+            } else if output.exit_code == Some(2)
+                || (output.ok() && output.stdout.trim().is_empty())
+            {
+                Some("the local lookup returned no address")
+            } else {
+                None
+            };
+            if let Some(observation) = observation {
+                result.evidence.push(AdapterEvidence {
+                    probe: ProbeId::Hosts,
+                    observation: observation.into(),
+                });
             }
         }
     }
@@ -63,7 +69,7 @@ fn is_curl(command: &str) -> bool {
         .is_some_and(|name| name == "curl")
 }
 
-fn request_target(args: &[String]) -> Option<(String, u16, bool)> {
+pub(super) fn request_target(args: &[String]) -> Option<(String, u16, bool)> {
     let mut url = None;
     let mut index = 0;
     while index < args.len() {

@@ -29,6 +29,8 @@ pub enum ProbeId {
     DockerAll,
     DockerInspect,
     DockerLogs,
+    SystemdShow,
+    SystemdLogs,
     GitStatus,
     GitDiff,
     CargoCheck,
@@ -183,6 +185,61 @@ impl ProbeSpec {
                     "container-log",
                 )
             }
+            ProbeId::SystemdShow => {
+                #[cfg(not(target_os = "linux"))]
+                return None;
+                let unit = target.filter(|unit| valid_systemd_service(unit))?;
+                (
+                    "systemd unit state",
+                    "systemctl",
+                    vec![
+                        "show".into(),
+                        "--no-pager".into(),
+                        "--property=Id,LoadState,ActiveState,Result,InvocationID".into(),
+                        "--".into(),
+                        unit.into(),
+                    ],
+                    "unit-state",
+                )
+            }
+            ProbeId::SystemdLogs => {
+                #[cfg(not(target_os = "linux"))]
+                return None;
+                let mut parts = target?.split('|');
+                let (Some(unit), Some(invocation), Some(start), Some(end), None) = (
+                    parts.next(),
+                    parts.next(),
+                    parts.next(),
+                    parts.next(),
+                    parts.next(),
+                ) else {
+                    return None;
+                };
+                let (start_time, end_time) = (start.parse::<u64>().ok()?, end.parse::<u64>().ok()?);
+                if !valid_systemd_service(unit)
+                    || invocation.len() != 32
+                    || !invocation.bytes().all(|byte| byte.is_ascii_hexdigit())
+                    || end_time < start_time
+                    || end_time - start_time > 3600
+                {
+                    return None;
+                }
+                (
+                    "bounded unit journal for the failed invocation",
+                    "journalctl",
+                    vec![
+                        format!("--unit={unit}"),
+                        format!("--since=@{start_time}"),
+                        format!("--until=@{end_time}"),
+                        "--lines=40".into(),
+                        "--no-pager".into(),
+                        "--output=cat".into(),
+                        "--quiet".into(),
+                        format!("_SYSTEMD_INVOCATION_ID={invocation}"),
+                    ],
+                    "unit-log",
+                )
+            }
             ProbeId::GitStatus => (
                 "repository status",
                 "git",
@@ -245,12 +302,12 @@ impl ProbeSpec {
             ProbeId::Listeners => &["port_owner", "no_local_listener"],
             ProbeId::Hosts | ProbeId::Route => &["remote_connectivity"],
             ProbeId::Filesystem | ProbeId::FilesystemInodes => &["filesystem_full"],
-            ProbeId::Stat => &["file_absent", "permission_mismatch"],
+            ProbeId::Stat => &["file_absent", "permission_mismatch", "docker_daemon"],
             ProbeId::Process => &["port_owner"],
-            ProbeId::DockerRunning | ProbeId::DockerAll | ProbeId::DockerInspect => {
-                &["container_exited"]
-            }
+            ProbeId::DockerRunning => &["container_exited", "docker_port_conflict"],
+            ProbeId::DockerAll | ProbeId::DockerInspect => &["container_exited"],
             ProbeId::DockerLogs => &["missing_env", "container_exited"],
+            ProbeId::SystemdShow | ProbeId::SystemdLogs => &["service_failed"],
             ProbeId::GitStatus | ProbeId::GitDiff => &["recent_changes"],
             ProbeId::CargoCheck => &["rust_compile_error"],
             ProbeId::GitPorcelain
@@ -283,6 +340,29 @@ fn valid_name(s: &str) -> bool {
         && s.bytes().next().is_some_and(|b| b.is_ascii_alphanumeric())
         && s.bytes()
             .all(|b| b.is_ascii_alphanumeric() || matches!(b, b'.' | b'_' | b'-'))
+}
+
+pub(crate) fn systemd_unit(name: &str) -> Option<String> {
+    let unit = if name.ends_with(".service") {
+        name.to_owned()
+    } else {
+        format!("{name}.service")
+    };
+    valid_systemd_service(&unit).then_some(unit)
+}
+
+fn valid_systemd_service(unit: &str) -> bool {
+    unit.len() <= 128
+        && unit.strip_suffix(".service").is_some_and(|name| {
+            !name.is_empty()
+                && name
+                    .bytes()
+                    .next()
+                    .is_some_and(|byte| byte.is_ascii_alphanumeric())
+                && name.bytes().all(|byte| {
+                    byte.is_ascii_alphanumeric() || matches!(byte, b'.' | b'_' | b'@' | b'-')
+                })
+        })
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -349,6 +429,17 @@ pub struct LocalProbeRunner;
 
 impl ProbeRunner for LocalProbeRunner {
     fn run(&self, spec: &ProbeSpec) -> Result<ProbeOutput, ProbeError> {
+        let log_target = if spec.id == ProbeId::SystemdLogs {
+            (|| {
+                let unit = spec.args.first()?.strip_prefix("--unit=")?;
+                let start = spec.args.get(1)?.strip_prefix("--since=@")?;
+                let end = spec.args.get(2)?.strip_prefix("--until=@")?;
+                let invocation = spec.args.last()?.strip_prefix("_SYSTEMD_INVOCATION_ID=")?;
+                Some(format!("{unit}|{invocation}|{start}|{end}"))
+            })()
+        } else {
+            None
+        };
         let target = match spec.id {
             ProbeId::Process => spec.args.get(1).map(String::as_str),
             ProbeId::Hosts
@@ -356,7 +447,9 @@ impl ProbeRunner for LocalProbeRunner {
             | ProbeId::FilesystemInodes
             | ProbeId::Stat
             | ProbeId::DockerInspect
-            | ProbeId::DockerLogs => spec.args.last().map(String::as_str),
+            | ProbeId::DockerLogs
+            | ProbeId::SystemdShow => spec.args.last().map(String::as_str),
+            ProbeId::SystemdLogs => log_target.as_deref(),
             _ => None,
         };
         let expected = ProbeSpec::new(spec.id, &spec.cwd, target);

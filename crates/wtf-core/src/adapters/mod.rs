@@ -10,7 +10,9 @@ use crate::probes::{ProbeId, ProbeOutput, ProbeRunner, ProbeSpec};
 mod cargo;
 mod curl;
 mod docker;
+mod docker_port;
 mod git;
+mod systemd;
 
 #[derive(Debug, Clone)]
 pub struct AdapterEvidence {
@@ -47,7 +49,21 @@ pub enum Finding {
         name: String,
         variable: String,
     },
+    DockerMissingBind {
+        name: String,
+    },
+    DockerPortOccupied {
+        owner: String,
+        port: u16,
+    },
     DockerDaemonUnavailable,
+    SystemdUnitNotFound {
+        unit: String,
+    },
+    SystemdFailed {
+        unit: String,
+        cause: Option<&'static str>,
+    },
 }
 
 #[derive(Debug, Default, Clone)]
@@ -113,11 +129,29 @@ impl<'a, R: ProbeRunner> AdapterContext<'a, R> {
     }
 }
 
+pub(crate) fn curl_host(args: &[String]) -> Option<String> {
+    curl::request_target(args).map(|(host, _, _)| host)
+}
+pub(crate) fn docker_targeted_error(stderr: &str) -> bool {
+    docker::bind_mount_error(stderr).is_some()
+        || docker_port::is_port_error(stderr)
+        || docker::is_daemon_error(stderr)
+}
+
 pub fn select(failure: &CommandExecution) -> Option<&'static str> {
-    if !failure.stdout.is_empty() || !failure.stderr.is_empty() || failure.is_success() {
+    if failure.is_success() {
         return None;
     }
     let basename = Path::new(&failure.command).file_name()?.to_str()?;
+    if basename == "systemctl" {
+        return Some("systemctl");
+    }
+    if basename == "docker" && docker_targeted_error(&failure.stderr) {
+        return Some("docker");
+    }
+    if !failure.stdout.is_empty() || !failure.stderr.is_empty() {
+        return None;
+    }
     match basename {
         "cargo" => Some("cargo"),
         "git" => Some("git"),
@@ -137,6 +171,7 @@ pub fn collect<R: ProbeRunner>(
         "git" => git::collect(failure, context),
         "curl" => curl::collect(failure, context),
         "docker" => docker::collect(failure, context),
+        "systemctl" => systemd::collect(failure, context),
         _ => unreachable!(),
     };
     Some((id, result))

@@ -28,8 +28,14 @@ export WTF_E2E_BIN="$root/install/bin/wtf"
 if [[ "$mode" == quick || "$mode" == all ]]; then
   if [[ -n "$filter" ]]; then
     cargo test --offline --locked -p wtf --test e2e_scenarios "$filter"
+    cargo test --offline --locked -p wtf --test systemd_e2e "$filter"
+    cargo test --offline --locked -p wtf --test docker_bind_e2e "$filter"
+    cargo test --offline --locked -p wtf --test docker_port_e2e "$filter"
   else
     cargo test --offline --locked -p wtf --test e2e_scenarios
+    cargo test --offline --locked -p wtf --test systemd_e2e
+    cargo test --offline --locked -p wtf --test docker_bind_e2e
+    cargo test --offline --locked -p wtf --test docker_port_e2e
   fi
 fi
 if [[ "$mode" == docker || "$mode" == all ]]; then

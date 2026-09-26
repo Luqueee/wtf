@@ -79,6 +79,7 @@ impl Shell {
         };
         let mut child = command
             .env_clear()
+            .env("WTF_NO_MODEL", "1")
             .env("HOME", home)
             .env("XDG_CONFIG_HOME", config_home)
             .env("XDG_RUNTIME_DIR", runtime)
@@ -251,6 +252,7 @@ impl IsolatedShell {
         command
             .args(args)
             .env_clear()
+            .env("WTF_NO_MODEL", "1")
             .env("HOME", &self.home)
             .env("XDG_CONFIG_HOME", &self.config_home)
             .env("XDG_RUNTIME_DIR", &self.runtime)
@@ -403,6 +405,7 @@ fn run_bash_pty(isolated: &IsolatedShell, commands: &[String]) -> Output {
     }
     let mut child = command
         .env_clear()
+        .env("WTF_NO_MODEL", "1")
         .env("HOME", &isolated.home)
         .env("XDG_CONFIG_HOME", &isolated.config_home)
         .env("XDG_RUNTIME_DIR", &isolated.runtime)

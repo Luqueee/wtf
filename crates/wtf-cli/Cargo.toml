@@ -14,6 +14,10 @@ wtf-core = { path = "../wtf-core" }
 clap.workspace = true
 serde.workspace = true
 serde_json.workspace = true
+ort = { version = "=2.0.0-rc.13", default-features = false, features = ["std", "download-binaries", "tls-native", "api-27"] }
+tokenizers = { version = "0.22.2", default-features = false, features = ["onig"] }
+sha2 = "0.10.9"
+ureq = { version = "2.12.1", default-features = false, features = ["tls"] }
 
 [dev-dependencies]
 tempfile.workspace = true

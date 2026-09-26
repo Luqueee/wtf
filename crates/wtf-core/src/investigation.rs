@@ -158,16 +158,10 @@ impl Investigation {
                 return;
             }
             Finding::CurlDnsFailure { host } => {
-                self.record(
-                    ProbeId::Hosts,
-                    format!("{} does not resolve", safe_observation(&host)),
-                );
-                (
-                    "dns_resolution",
-                    "network/dns",
-                    "DNS lookup failed.".into(),
-                    None,
-                )
+                diagnosis.category = Some("network/dns".into());
+                diagnosis.summary = format!("curl could not resolve {}.", safe_observation(&host));
+                diagnosis.status = crate::diagnosis::DiagnosisStatus::Likely;
+                return;
             }
             Finding::DockerExited { name, code, oom } => {
                 let name = safe_observation(&name);
@@ -193,12 +187,68 @@ impl Investigation {
                     Some(format!("Container \"{name}\" requires {variable}.")),
                 )
             }
+            Finding::DockerMissingBind { name } => {
+                let name = safe_observation(&name);
+                (
+                    "docker_missing_bind",
+                    "container/mount",
+                    format!("Docker could not create container \"{name}\"."),
+                    Some(format!(
+                        "The bind source requested for container \"{name}\" does not exist."
+                    )),
+                )
+            }
+            Finding::DockerPortOccupied { owner, port } => {
+                let owner = safe_observation(&owner);
+                if !diagnosis.entities.ports.contains(&port) {
+                    diagnosis.entities.ports.insert(0, port);
+                }
+                (
+                    "docker_port_conflict",
+                    "container/port-conflict",
+                    format!("Docker could not publish host TCP port {port}."),
+                    Some(format!(
+                        "Running container \"{owner}\" already publishes host TCP port {port}."
+                    )),
+                )
+            }
             Finding::DockerDaemonUnavailable => (
                 "docker_daemon",
                 "container/daemon",
-                "Docker daemon is unavailable.".into(),
-                None,
+                "Docker cannot reach its local daemon.".into(),
+                Some("The reported local Docker Unix socket does not exist.".into()),
             ),
+            Finding::SystemdUnitNotFound { unit } => {
+                let unit = safe_observation(&unit);
+                (
+                    "service_not_found",
+                    "service/not-found",
+                    format!("Service {unit} could not be started."),
+                    Some(format!("Service unit {unit} was not found.")),
+                )
+            }
+            Finding::SystemdFailed { unit, cause } => {
+                let unit = safe_observation(&unit);
+                diagnosis.category = Some("service/failed".into());
+                diagnosis.summary = format!("Service {unit} failed to start.");
+                if let Some(cause) = cause {
+                    let root =
+                        format!("Service unit {unit} reported {cause} during the failed start.");
+                    self.candidate("service_failed");
+                    self.support("service_failed", &root, true);
+                    self.root_cause = Some(root);
+                    diagnosis.status = crate::diagnosis::DiagnosisStatus::Confirmed;
+                } else {
+                    self.candidate("service_failed");
+                    self.support(
+                        "service_failed",
+                        "the requested unit is in a failed state",
+                        false,
+                    );
+                    diagnosis.status = crate::diagnosis::DiagnosisStatus::Likely;
+                }
+                return;
+            }
         };
         diagnosis.category = Some(category.into());
         diagnosis.summary = summary;
@@ -347,6 +397,8 @@ fn probe_label(id: ProbeId) -> &'static str {
         ProbeId::DockerAll => "docker ps -a",
         ProbeId::DockerInspect => "docker inspect",
         ProbeId::DockerLogs => "docker logs",
+        ProbeId::SystemdShow => "systemctl show",
+        ProbeId::SystemdLogs => "journalctl",
         ProbeId::GitStatus => "git status",
         ProbeId::GitDiff => "git diff",
         ProbeId::CargoCheck => "cargo check",
@@ -473,8 +525,25 @@ impl<R: ProbeRunner> InvestigationEngine<R> {
             result.record(item.probe, safe_observation(&item.observation));
         }
         result.reconstruction_note = note.map(|text| safe_observation(&text));
+        if adapter == "docker" && adapters::docker_targeted_error(&execution.stderr) {
+            // Only synthesized evidence belongs to this finding; captured output remains
+            // accessible through the explicit capture fields, not reclassified as proof.
+            diagnosis.evidence.clear();
+            diagnosis.detection = None;
+            diagnosis.remedy = None;
+        }
         if let Some(finding) = finding {
             result.apply_finding(finding, diagnosis);
+        } else if adapter == "systemctl" {
+            // Captured stderr is a symptom, not evidence for a service root cause.
+            diagnosis.category = Some("unknown".into());
+            diagnosis.summary = "The service failure could not be verified.".into();
+            diagnosis.status = crate::diagnosis::DiagnosisStatus::Unknown;
+        } else if adapter == "docker" && adapters::docker_targeted_error(&execution.stderr) {
+            // A daemon message alone, or contradictory current state, is not proof.
+            diagnosis.category = Some("unknown".into());
+            diagnosis.summary = "The Docker failure could not be verified.".into();
+            diagnosis.status = crate::diagnosis::DiagnosisStatus::Unknown;
         }
         if result.root_cause.is_none()
             && adapter == "curl"
@@ -516,6 +585,7 @@ impl<R: ProbeRunner> InvestigationEngine<R> {
             | Some("network/connect-failed") => {
                 self.network(execution, diagnosis, &mut result, cwd, deadline);
             }
+            Some("network/dns") => self.dns(execution, &mut result, cwd, deadline),
             Some("filesystem/disk-full") => self.disk(diagnosis, &mut result, cwd, deadline),
             Some("filesystem/not-found") | Some("filesystem/permission-denied") => {
                 self.file(diagnosis, &mut result, cwd, deadline);
@@ -529,6 +599,48 @@ impl<R: ProbeRunner> InvestigationEngine<R> {
             }
         }
         result
+    }
+
+    fn dns(
+        &self,
+        execution: &CommandExecution,
+        result: &mut Investigation,
+        cwd: &Path,
+        deadline: Instant,
+    ) {
+        if command_basename(&execution.command) != "curl" {
+            return;
+        }
+        let Some(host) = adapters::curl_host(&execution.args) else {
+            return;
+        };
+        if host.parse::<std::net::IpAddr>().is_ok() {
+            return;
+        }
+        // Only inspect the URL's host if curl reported that same host.
+        let reported = execution
+            .stderr
+            .lines()
+            .chain(execution.stdout.lines())
+            .find_map(crate::detectors::dns_failure::reported_host);
+        if !reported.is_some_and(|reported| reported.eq_ignore_ascii_case(&host)) {
+            return;
+        }
+        result.candidate("current_resolution_failure");
+        if let Some(out) = self.probe(result, cwd, ProbeId::Hosts, Some(&host), deadline) {
+            if out.truncated {
+                return;
+            }
+            if out.ok() && !out.stdout.trim().is_empty() {
+                let fact = "the hostname currently resolves locally";
+                result.record(ProbeId::Hosts, fact.into());
+                result.reject("current_resolution_failure", fact);
+            } else if out.exit_code == Some(2) || (out.ok() && out.stdout.trim().is_empty()) {
+                let fact = "the local lookup returned no address";
+                result.record(ProbeId::Hosts, fact.into());
+                result.support("current_resolution_failure", fact, false);
+            }
+        }
     }
 
     fn network(
@@ -651,6 +763,7 @@ impl<R: ProbeRunner> InvestigationEngine<R> {
             })
             .unwrap_or_else(|| cwd.to_path_buf());
         let existing = existing_ancestor(&path);
+        let mut below_full_mount = None;
         if let Some(out) = self.probe(
             result,
             cwd,
@@ -659,7 +772,7 @@ impl<R: ProbeRunner> InvestigationEngine<R> {
             deadline,
         ) {
             if out.ok() {
-                if let Some((pct, mount)) = parse_df(&out.stdout, 0) {
+                if let Some((pct, mount)) = parse_df(&out.stdout, ProbeId::Filesystem) {
                     let fact = format!("filesystem {mount} is {pct}% used");
                     result.record(ProbeId::Filesystem, fact.clone());
                     if pct >= 100 {
@@ -671,6 +784,7 @@ impl<R: ProbeRunner> InvestigationEngine<R> {
                         result.remedy = recipe("filesystem_full").map(str::to_owned);
                         return;
                     }
+                    below_full_mount = Some(mount.to_owned());
                 }
             }
         }
@@ -682,7 +796,7 @@ impl<R: ProbeRunner> InvestigationEngine<R> {
             deadline,
         ) {
             if out.ok() {
-                if let Some((pct, mount)) = parse_df(&out.stdout, 1) {
+                if let Some((pct, mount)) = parse_df(&out.stdout, ProbeId::FilesystemInodes) {
                     let fact = format!("filesystem {mount} has {pct}% of inodes used");
                     result.record(ProbeId::FilesystemInodes, fact.clone());
                     if pct >= 100 {
@@ -692,6 +806,11 @@ impl<R: ProbeRunner> InvestigationEngine<R> {
                         ));
                         result.support("filesystem_full", &fact, true);
                         result.remedy = recipe("filesystem_full").map(str::to_owned);
+                    } else if below_full_mount.as_deref() == Some(mount) {
+                        result.reject(
+                            "filesystem_full",
+                            "both block and inode capacity are below full on the same filesystem",
+                        );
                     }
                 }
             }
@@ -957,13 +1076,33 @@ fn parse_listener(output: &str, port: u16) -> Option<Listener> {
     None
 }
 
-fn parse_df(output: &str, percentage_index: usize) -> Option<(u16, String)> {
-    let line = output.lines().skip(1).last()?;
-    let pct = line
-        .split_whitespace()
-        .filter_map(|s| s.strip_suffix('%')?.parse::<u16>().ok())
-        .nth(percentage_index)?;
-    Some((pct, line.split_whitespace().last()?.to_string()))
+fn parse_df(output: &str, probe: ProbeId) -> Option<(u16, &str)> {
+    let mut lines = output.lines();
+    let expected_column = match probe {
+        ProbeId::Filesystem => "Capacity",
+        ProbeId::FilesystemInodes => "IUse%",
+        _ => return None,
+    };
+    let mut header = lines.next()?.split_whitespace();
+    if header.next()? != "Filesystem"
+        || header.nth(3)? != expected_column
+        || header.next()? != "Mounted"
+        || header.next()? != "on"
+        || header.next().is_some()
+    {
+        return None;
+    }
+    let mut fields = lines.next()?.split_whitespace();
+    fields.next()?;
+    for _ in 0..3 {
+        fields.next()?.parse::<u64>().ok()?;
+    }
+    let pct = fields.next()?.strip_suffix('%')?.parse::<u16>().ok()?;
+    let mount = fields.next()?;
+    if fields.next().is_some() || lines.any(|line| !line.trim().is_empty()) {
+        return None;
+    }
+    Some((pct, mount))
 }
 
 fn parse_stat(output: &str) -> Option<(&str, &str, &str, &str)> {

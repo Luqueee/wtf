@@ -3,17 +3,18 @@
 CARGO ?= cargo
 E2E_FILTER ?=
 
-.PHONY: help build check test fmt fmt-check lint e2e e2e-docker e2e-all
+.PHONY: help build check test calibration fmt fmt-check lint e2e e2e-docker e2e-all
 
 help:
 	@printf '%s\n' \
 		'make build       Build the Rust workspace' \
 		'make check       Check all targets' \
 		'make test        Run the Rust test suite (Docker E2E stays ignored)' \
+		'make calibration Run isolated diagnostic matrices and print observed metrics' \
 		'make fmt         Format Rust sources' \
 		'make fmt-check   Check Rust formatting' \
 		'make lint        Run Clippy with warnings denied' \
-		'make e2e         Run Cargo, Git, and curl E2E scenarios' \
+		'make e2e         Run Cargo, Git, curl, and isolated systemd/Docker E2E' \
 		'make e2e-docker  Opt in to shared-daemon Docker E2E' \
 		'make e2e-all     Run both E2E groups (includes Docker)' \
 		'Filter quick or Docker E2E: make e2e E2E_FILTER=cargo_build_failure'
@@ -26,6 +27,10 @@ check:
 
 test:
 	$(CARGO) test --locked --workspace
+
+calibration:
+	$(CARGO) test --locked -p wtf --test diagnostic_benchmark --test shell_calibration --test dns_calibration --test service_container_calibration -- --nocapture
+	$(CARGO) test --locked -p wtf-core --test calibration_matrix --test dns_investigation -- --nocapture
 
 fmt:
 	$(CARGO) fmt --all

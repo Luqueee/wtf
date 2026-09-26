@@ -7,6 +7,8 @@ use wtf_core::diagnosis::{Diagnosis, DiagnosisEngine, DiagnosisStatus, RenderOpt
 use wtf_core::investigation::{Investigation, InvestigationEngine};
 use wtf_core::probes::LocalProbeRunner;
 
+mod model;
+mod model_cache;
 mod shell_install;
 mod shell_state;
 
@@ -38,6 +40,13 @@ struct Cli {
     /// Include investigation hypotheses, probes, evidence, and captured metadata
     #[arg(long)]
     verbose: bool,
+    /// Use a custom local Laya bundle instead of the automatically cached model
+    #[arg(long, value_name = "DIR", conflicts_with = "no_model")]
+    model_dir: Option<std::path::PathBuf>,
+
+    /// Disable the default local model and its first-use download
+    #[arg(long)]
+    no_model: bool,
 
     /// Command and arguments to execute and diagnose
     #[arg(last = true)]
@@ -112,7 +121,23 @@ fn main() -> ExitCode {
     }
 
     let (diagnosis, investigation) = diagnose(&execution);
-    render_result(&execution, &diagnosis, investigation.as_ref(), &cli);
+    let no_model = cli.no_model || std::env::var("WTF_NO_MODEL").as_deref() == Ok("1");
+    let model_result = (!no_model).then(|| {
+        investigation.as_ref().map_or(Ok(None), |investigation| {
+            if diagnosis.status == DiagnosisStatus::Confirmed {
+                Ok(None)
+            } else {
+                model::decide(cli.model_dir.as_deref(), &diagnosis, investigation)
+            }
+        })
+    });
+    render_result(
+        &execution,
+        &diagnosis,
+        investigation.as_ref(),
+        model_result.as_ref(),
+        &cli,
+    );
 
     match diagnosis.exit_status.code {
         Some(code) => ExitCode::from((code & 0xFF) as u8),
@@ -138,10 +163,12 @@ fn diagnose(execution: &CommandExecution) -> (Diagnosis, Option<Investigation>) 
     let investigation = if diagnosis.status == DiagnosisStatus::Success {
         None
     } else {
-        Some(
-            InvestigationEngine::new(LocalProbeRunner)
-                .investigate_reconstructed(execution, &mut diagnosis),
-        )
+        let investigation = InvestigationEngine::new(LocalProbeRunner)
+            .investigate_reconstructed(execution, &mut diagnosis);
+        if investigation.root_cause.is_some() {
+            diagnosis.status = DiagnosisStatus::Confirmed;
+        }
+        Some(investigation)
     };
     (diagnosis, investigation)
 }
@@ -150,6 +177,7 @@ fn render_result(
     execution: &CommandExecution,
     diagnosis: &Diagnosis,
     investigation: Option<&Investigation>,
+    model_result: Option<&Result<Option<model::ModelDecision>, String>>,
     cli: &Cli,
 ) {
     if cli.json {
@@ -158,11 +186,17 @@ fn render_result(
             #[serde(flatten)]
             diagnosis: &'a Diagnosis,
             investigation: Option<&'a Investigation>,
+            #[serde(skip_serializing_if = "Option::is_none")]
+            model_decision: Option<&'a model::ModelDecision>,
+            #[serde(skip_serializing_if = "Option::is_none")]
+            model_error: Option<&'a str>,
         }
 
         let output = JsonOutput {
             diagnosis,
             investigation,
+            model_decision: model_result.and_then(|result| result.as_ref().ok()?.as_ref()),
+            model_error: model_result.and_then(|result| result.as_ref().err().map(String::as_str)),
         };
         let json_str = serde_json::to_string_pretty(&output)
             .unwrap_or_else(|e| format!("{{\"error\": \"Failed to serialize: {e}\"}}"));
@@ -200,5 +234,24 @@ fn render_result(
         };
         let rendered = investigation.render(diagnosis, &render_options, cli.verbose);
         print!("{rendered}");
+        if let Some(result) = model_result {
+            match result {
+                Ok(Some(decision)) => {
+                    if let Some(preferred) = &decision.preferred {
+                        let score = decision
+                            .probabilities
+                            .iter()
+                            .find(|option| &option.hypothesis == preferred)
+                            .expect("preferred option is present")
+                            .probability;
+                        println!("Local model (advisory, not confirmed): {preferred} ({score:.2})");
+                    } else {
+                        println!("Local model: no hypothesis reached the 0.80 advisory threshold.");
+                    }
+                }
+                Err(error) => eprintln!("Local model unavailable: {error}"),
+                Ok(None) => {}
+            }
+        }
     }
 }

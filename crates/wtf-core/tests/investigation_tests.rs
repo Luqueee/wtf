@@ -277,10 +277,18 @@ fn filesystem_full_requires_df_evidence() {
         .is_some_and(|s| s.contains("100% full")));
     let fixture = FixtureRunner::new(&["df"], &[
         (ProbeId::Filesystem, "Filesystem 1024-blocks Used Available Capacity Mounted on\n/dev/disk1 1000 900 100 90% /tmp\n"),
-        (ProbeId::FilesystemInodes, "Filesystem 1024-blocks Used Available Capacity iused ifree %iused Mounted on\n/dev/disk1 1000 900 100 90% 70 30 70% /tmp\n"),
+        (ProbeId::FilesystemInodes, "Filesystem Inodes IUsed IFree IUse% Mounted on\n/dev/disk1 100 70 30 70% /tmp\n"),
     ]);
     let report = InvestigationEngine::new(fixture).investigate(&execution, &diagnosis);
     assert!(report.root_cause.is_none());
+    assert_eq!(
+        report
+            .hypotheses
+            .iter()
+            .find(|h| h.id == "filesystem_full")
+            .map(|h| h.status),
+        Some(HypothesisStatus::Rejected)
+    );
 }
 
 #[test]
@@ -293,7 +301,7 @@ fn disk_error_with_free_blocks_but_no_inodes_has_confirmed_cause() {
     let diagnosis = DiagnosisEngine::new().diagnose(&execution);
     let fixture = FixtureRunner::new(&["df"], &[
         (ProbeId::Filesystem, "Filesystem Blocks Used Available Capacity Mounted on\n/dev/disk1 1000 900 100 90% /tmp\n"),
-        (ProbeId::FilesystemInodes, "Filesystem Blocks Used Available Capacity iused ifree %iused Mounted on\n/dev/disk1 1000 900 100 90% 100 0 100% /tmp\n"),
+        (ProbeId::FilesystemInodes, "Filesystem Inodes IUsed IFree IUse% Mounted on\n/dev/disk1 100 100 0 100% /tmp\n"),
     ]);
     let report = InvestigationEngine::new(fixture).investigate(&execution, &diagnosis);
     assert!(report
@@ -307,6 +315,71 @@ fn disk_error_with_free_blocks_but_no_inodes_has_confirmed_cause() {
             .map(|attempt| attempt.probe)
             .collect::<Vec<_>>(),
         [ProbeId::Filesystem, ProbeId::FilesystemInodes]
+    );
+}
+
+#[test]
+fn disk_full_is_rejected_only_by_two_valid_matching_df_reports() {
+    let execution = failed("cp", &[], "cp: No space left on device");
+    let diagnosis = DiagnosisEngine::new().diagnose(&execution);
+    let blocks = "Filesystem Blocks Used Available Capacity Mounted on\n/dev/disk 1000 900 100 90% /private/mount\n";
+    let inodes = "Filesystem Inodes IUsed IFree IUse% Mounted on\n/dev/disk 1000 900 100 90% /private/mount\n";
+    for bad_blocks in [
+        "Filesystem Blocks Used Available Capacity Mounted on\n/dev/disk 100% 900 100 N/A /private/mount\n",
+        "Filesystem Blocks Used Available IUse% Mounted on\n/dev/disk 1000 900 100 90% /private/mount\n",
+        "Filesystem Blocks Used Available Capacity Mounted on\n/dev/disk 1000 900 100 90% /private/mount\n/dev/other 1000 900 100 90% /other\n",
+        "Filesystem Blocks Used Available Capacity Mounted on\n/dev/disk 1000 bad 100 90% /private/mount\n",
+        "Bad Blocks Used Available Capacity Mounted on\n/dev/disk 1000 900 100 90% /private/mount\n",
+    ] {
+        let fixture = FixtureRunner::new(
+            &["df"],
+            &[(ProbeId::Filesystem, bad_blocks), (ProbeId::FilesystemInodes, inodes)],
+        );
+        let report = InvestigationEngine::new(fixture).investigate(&execution, &diagnosis);
+        assert!(report.root_cause.is_none());
+        assert_eq!(
+            report.hypotheses.iter().find(|h| h.id == "filesystem_full").map(|h| h.status),
+            Some(HypothesisStatus::Candidate)
+        );
+    }
+    let mismatched_inodes = inodes.replace("/private/mount", "/different/mount");
+    let fixture = FixtureRunner::new(
+        &["df"],
+        &[
+            (ProbeId::Filesystem, blocks),
+            (ProbeId::FilesystemInodes, &mismatched_inodes),
+        ],
+    );
+    let report = InvestigationEngine::new(fixture).investigate(&execution, &diagnosis);
+    assert_eq!(
+        report
+            .hypotheses
+            .iter()
+            .find(|h| h.id == "filesystem_full")
+            .map(|h| h.status),
+        Some(HypothesisStatus::Candidate)
+    );
+    let mut fixture = FixtureRunner::new(
+        &["df"],
+        &[
+            (ProbeId::Filesystem, blocks),
+            (ProbeId::FilesystemInodes, inodes),
+        ],
+    );
+    fixture
+        .output
+        .get_mut(&ProbeId::Filesystem)
+        .unwrap()
+        .truncated = true;
+    fixture = fixture.with_failure(ProbeId::FilesystemInodes, "unavailable");
+    let report = InvestigationEngine::new(fixture).investigate(&execution, &diagnosis);
+    assert_eq!(
+        report
+            .hypotheses
+            .iter()
+            .find(|h| h.id == "filesystem_full")
+            .map(|h| h.status),
+        Some(HypothesisStatus::Candidate)
     );
 }
 
