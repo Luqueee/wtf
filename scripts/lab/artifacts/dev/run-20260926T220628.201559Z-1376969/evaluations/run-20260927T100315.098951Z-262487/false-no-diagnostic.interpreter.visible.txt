@@ -1,0 +1,3 @@
+✗  false  1
+   RESULT    Command result: exit code 1.
+   MISSING   No output detail was captured.

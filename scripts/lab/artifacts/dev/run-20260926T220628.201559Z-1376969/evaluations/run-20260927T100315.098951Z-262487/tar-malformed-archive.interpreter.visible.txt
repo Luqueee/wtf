@@ -1,0 +1,6 @@
+✗  tar  2
+   RESULT    Command result: exit code 2.
+   OBSERVED  /usr/bin/tar: This does not look like a tar archive
+   POSSIBLE  May be: /usr/bin/tar
+   MISSING   file_path
+   NEXT      Verify the file path provided to the 'tar' command for integrity and correctness.

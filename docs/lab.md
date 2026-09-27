@@ -56,6 +56,12 @@ python3 scripts/lab/evaluate.py \
 
 The default wall timeout is 180 seconds per CLI replay; set `--timeout-seconds` between 5 and 900 to change it. Captured report output is capped at 256 KiB per stream. Each replay gets a private temporary HOME/TMPDIR which is removed immediately afterward. The local inference process is wall-bounded and process-group-killed on timeout; the fixture resource limits above apply to source commands, not to the model runtime.
 
+## Rejected evidence-ID prompt experiment (development only)
+
+After the historical reserved and follow-up runs, an experimental prompt listed the exact available evidence IDs, removed timestamps from model input, and used `generic-evidence-2`. It was replayed against the **same nine development snapshots**, not against a new held-out set. [Phi reports](../scripts/lab/artifacts/dev/run-20260926T220628.201559Z-1376969/evaluations/run-20260927T100124.392066Z-253581/) and [Granite reports](../scripts/lab/artifacts/dev/run-20260926T220628.201559Z-1376969/evaluations/run-20260927T100315.098951Z-262487/) include per-case JSON, visible output, statuses and elapsed times; no fixture command or probe was rerun.
+
+Granite's five informative cases went from **5/5 invalid evidence IDs** in the original development run to **0/5 invalid IDs**, but all five newly displayed model claims. Its adversarial fixture falsely suggested a permission/sudo problem, and its tar explanation was only a program path. Phi had **0/5 invalid IDs** both before and after; its accepted responses fell from **5/5 to 3/5** (two `unsupported suggestion` fallbacks), and the adversarial fixture still asserted a false missing-program explanation. Neither candidate added a demonstrated, independently supported explanation or discriminating check. An ID-valid model statement is not necessarily true: the prompt change was **reverted**, leaving `generic-evidence-1` and strict rejection of invalid IDs in place. These records are a development comparison of a rejected binary, not a current release measurement or fresh held-out result.
+
 ## Reserved suite
 
 Development and reserved families are distinct. The reserved manifest and independent oracle were sealed before any reserved execution:

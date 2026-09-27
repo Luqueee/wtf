@@ -69,6 +69,8 @@ pub struct Report {
     pub summary: String,
     pub claims: Vec<Claim>,
     pub checks: usize,
+    #[serde(skip)]
+    diagnosis_status: DiagnosisStatus,
 }
 
 /// Strip terminal controls and mask recognizable credential arguments, headers, and URLs.
@@ -289,9 +291,12 @@ impl Report {
         let summary = if diagnosis.status == DiagnosisStatus::Success {
             "Command completed successfully.".to_owned()
         } else if shell && diagnosis.status == DiagnosisStatus::Unknown {
-            "Recent command failed; original output unavailable.".to_owned()
+            format!(
+                "Recent command result: {}; original output unavailable.",
+                execution.exit_status.display()
+            )
         } else if diagnosis.status == DiagnosisStatus::Unknown {
-            format!("Command failed: {}.", execution.exit_status.display())
+            format!("Command result: {}.", execution.exit_status.display())
         } else if diagnosis.status == DiagnosisStatus::Likely {
             let source = if shell {
                 if investigation.is_some_and(|inv| !inv.evidence.is_empty()) {
@@ -369,7 +374,7 @@ impl Report {
                 if claims.is_empty() {
                     claims.push(Claim {
                         kind: ClaimKind::Missing,
-                        text: "No failure detail was captured.".to_owned(),
+                        text: "No output detail was captured.".to_owned(),
                         source: ClaimSource::Metadata { field: "capture" },
                     });
                 }
@@ -416,6 +421,7 @@ impl Report {
             summary,
             claims,
             checks,
+            diagnosis_status: diagnosis.status,
         }
     }
 
@@ -467,13 +473,19 @@ impl Report {
     ) -> String {
         use std::fmt::Write as _;
 
-        let icon = if execution.is_success() { "✓" } else { "✗" };
+        let icon = match self.diagnosis_status {
+            DiagnosisStatus::Success => "✓",
+            DiagnosisStatus::Unknown => "?",
+            _ => "✗",
+        };
         let accent = if !color {
             ""
-        } else if execution.is_success() {
-            "\x1b[1;92m"
         } else {
-            "\x1b[1;91m"
+            match self.diagnosis_status {
+                DiagnosisStatus::Success => "\x1b[1;92m",
+                DiagnosisStatus::Unknown => "\x1b[1;93m",
+                _ => "\x1b[1;91m",
+            }
         };
         let bold = if color { "\x1b[1m" } else { "" };
         let muted = if color { "\x1b[90m" } else { "" };

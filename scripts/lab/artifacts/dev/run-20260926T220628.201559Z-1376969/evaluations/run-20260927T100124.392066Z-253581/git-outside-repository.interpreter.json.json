@@ -1,0 +1,59 @@
+{
+  "category": "unknown",
+  "command": "/usr/bin/git status --short",
+  "detection": null,
+  "duration": {
+    "nanos": 1698749,
+    "secs": 0
+  },
+  "entities": {
+    "containers": [],
+    "paths": [],
+    "ports": [],
+    "processes": [
+      "git"
+    ],
+    "services": []
+  },
+  "evidence": [
+    "fatal: not a git repository (or any of the parent directories): .git"
+  ],
+  "exit_status": {
+    "code": 128,
+    "signal": null
+  },
+  "interpretation_error": "unsupported suggestion",
+  "investigation": null,
+  "normalized": {
+    "clean_stderr": "fatal: not a git repository (or any of the parent directories): .git\n\n",
+    "clean_stdout": "",
+    "collapsed_count": 0,
+    "relevant_lines": [
+      "fatal: not a git repository (or any of the parent directories): .git"
+    ]
+  },
+  "remedy": null,
+  "report": {
+    "capture": "captured",
+    "captured_at": 1790460388,
+    "checks": 0,
+    "claims": [
+      {
+        "kind": "observed",
+        "source": {
+          "field": "stderr",
+          "type": "execution"
+        },
+        "text": "fatal: not a git repository (or any of the parent directories): .git"
+      }
+    ],
+    "command_label": "git",
+    "outcome": "128",
+    "reported_at": 1790503307,
+    "source_mode": "explicit",
+    "summary": "Command result: exit code 128."
+  },
+  "schema_version": 1,
+  "status": "Unknown",
+  "summary": "Command failed with exit code 128."
+}

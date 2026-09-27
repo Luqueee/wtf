@@ -1,0 +1,111 @@
+{
+  "category": "filesystem/not-found",
+  "command": "/usr/bin/cp -- missing-input.txt copied.txt",
+  "detection": {
+    "category": "filesystem/not-found",
+    "confidence": 0.949999988079071,
+    "detector_id": "file_not_found",
+    "entities": {
+      "containers": [],
+      "paths": [],
+      "ports": [],
+      "processes": [
+        "cp"
+      ],
+      "services": []
+    },
+    "evidence": [
+      "cp: cannot stat 'missing-input.txt': No such file or directory"
+    ],
+    "remedy": null,
+    "summary": "File does not exist."
+  },
+  "duration": {
+    "nanos": 1759639,
+    "secs": 0
+  },
+  "entities": {
+    "containers": [],
+    "paths": [],
+    "ports": [],
+    "processes": [
+      "cp"
+    ],
+    "services": []
+  },
+  "evidence": [
+    "cp: cannot stat 'missing-input.txt': No such file or directory"
+  ],
+  "exit_status": {
+    "code": 1,
+    "signal": null
+  },
+  "interpretation": {
+    "evidence_ids": [
+      "stderr"
+    ],
+    "missing": "missing-input.txt",
+    "next": "verify existence of missing-input.txt",
+    "possible": "missing-input.txt"
+  },
+  "investigation": null,
+  "normalized": {
+    "clean_stderr": "cp: cannot stat 'missing-input.txt': No such file or directory\n\n",
+    "clean_stdout": "",
+    "collapsed_count": 0,
+    "relevant_lines": [
+      "cp: cannot stat 'missing-input.txt': No such file or directory"
+    ]
+  },
+  "remedy": null,
+  "report": {
+    "capture": "captured",
+    "captured_at": 1790460388,
+    "checks": 0,
+    "claims": [
+      {
+        "kind": "observed",
+        "source": {
+          "field": "stderr",
+          "type": "execution"
+        },
+        "text": "cp: cannot stat 'missing-input.txt': No such file or directory"
+      },
+      {
+        "kind": "possible",
+        "source": {
+          "evidence_ids": [
+            "stderr"
+          ],
+          "type": "model"
+        },
+        "text": "May be: missing-input.txt"
+      },
+      {
+        "kind": "missing",
+        "source": {
+          "evidence_ids": [
+            "stderr"
+          ],
+          "type": "model"
+        },
+        "text": "missing-input.txt"
+      },
+      {
+        "kind": "next",
+        "source": {
+          "type": "suggestion"
+        },
+        "text": "verify existence of missing-input.txt"
+      }
+    ],
+    "command_label": "cp",
+    "outcome": "1",
+    "reported_at": 1790503287,
+    "source_mode": "explicit",
+    "summary": "Reported: File does not exist."
+  },
+  "schema_version": 1,
+  "status": "Likely",
+  "summary": "File does not exist."
+}

@@ -1,0 +1,6 @@
+✗  python3.14  37
+   RESULT    Reported: Permission denied.
+   OBSERVED  ERROR: permission denied for fixture-user
+   POSSIBLE  May be: Permission error due to lack of sudo privileges for system-level operation.
+   MISSING   Specific user [REDACTED] or authorization [REDACTED]
+   NEXT      Manual check for user [REDACTED] and sudo access.

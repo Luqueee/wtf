@@ -1,0 +1,98 @@
+{
+  "category": "unknown",
+  "command": "/usr/bin/sed -n s/[//p input.txt",
+  "detection": null,
+  "duration": {
+    "nanos": 1756060,
+    "secs": 0
+  },
+  "entities": {
+    "containers": [],
+    "paths": [
+      "/usr/bin/sed"
+    ],
+    "ports": [],
+    "processes": [
+      "sed"
+    ],
+    "services": []
+  },
+  "evidence": [
+    "/usr/bin/sed: -e [REDACTED] #1, char 6: unterminated 's' command"
+  ],
+  "exit_status": {
+    "code": 1,
+    "signal": null
+  },
+  "interpretation": {
+    "evidence_ids": [
+      "exit",
+      "stderr"
+    ],
+    "missing": "Specific content of the sed command.",
+    "next": "Manual review of the sed command to identify the unterminated 's' command.",
+    "possible": "Syntax error in the sed command, likely due to an unterminated 's' command."
+  },
+  "investigation": null,
+  "normalized": {
+    "clean_stderr": "/usr/bin/sed: -e [REDACTED] #1, char 6: unterminated 's' command\n\n",
+    "clean_stdout": "",
+    "collapsed_count": 0,
+    "relevant_lines": [
+      "/usr/bin/sed: -e [REDACTED] #1, char 6: unterminated 's' command"
+    ]
+  },
+  "remedy": null,
+  "report": {
+    "capture": "captured",
+    "captured_at": 1790460388,
+    "checks": 0,
+    "claims": [
+      {
+        "kind": "observed",
+        "source": {
+          "field": "stderr",
+          "type": "execution"
+        },
+        "text": "/usr/bin/sed: -e [REDACTED] #1, char 6: unterminated 's' command"
+      },
+      {
+        "kind": "possible",
+        "source": {
+          "evidence_ids": [
+            "exit",
+            "stderr"
+          ],
+          "type": "model"
+        },
+        "text": "May be: Syntax error in the sed command, likely due to an unterminated 's' command."
+      },
+      {
+        "kind": "missing",
+        "source": {
+          "evidence_ids": [
+            "exit",
+            "stderr"
+          ],
+          "type": "model"
+        },
+        "text": "Specific content of the sed command."
+      },
+      {
+        "kind": "next",
+        "source": {
+          "type": "suggestion"
+        },
+        "text": "Manual review of the sed command to identify the unterminated 's' command."
+      }
+    ],
+    "command_label": "sed",
+    "outcome": "1",
+    "reported_at": 1790503414,
+    "source_mode": "explicit",
+    "summary": "Command result: exit code 1."
+  },
+  "schema_version": 1,
+  "status": "Unknown",
+  "summary": "Command failed with exit code 1."
+}

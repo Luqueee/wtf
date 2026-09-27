@@ -75,6 +75,53 @@ fn arbitrary_command_reports_evidence_without_inventing_a_missing_fact() {
 }
 
 #[test]
+fn diff_exit_one_reports_differences_without_claiming_failure() {
+    let dir = tempfile::tempdir().unwrap();
+    let first = dir.path().join("first");
+    let second = dir.path().join("second");
+    std::fs::write(&first, "before\n").unwrap();
+    std::fs::write(&second, "after\n").unwrap();
+
+    let output = Command::new(wtf_bin())
+        .args([
+            "--json",
+            "--",
+            "diff",
+            first.to_str().unwrap(),
+            second.to_str().unwrap(),
+        ])
+        .output()
+        .unwrap();
+    assert_eq!(output.status.code(), Some(1));
+    let json: serde_json::Value = serde_json::from_slice(&output.stdout).unwrap();
+    assert_eq!(json["report"]["outcome"], "1");
+    assert_eq!(json["report"]["summary"], "Command result: exit code 1.");
+    assert_eq!(json["report"]["claims"][0]["source"]["field"], "stdout");
+    assert!(json["report"]["claims"][0]["text"]
+        .as_str()
+        .unwrap()
+        .contains("1c1"));
+
+    let plain = Command::new(wtf_bin())
+        .args([
+            "--no-color",
+            "--",
+            "diff",
+            first.to_str().unwrap(),
+            second.to_str().unwrap(),
+        ])
+        .output()
+        .unwrap();
+    assert_eq!(plain.status.code(), Some(1));
+    let text = String::from_utf8(plain.stdout).unwrap();
+    assert!(text.starts_with("?  diff  1\n"), "{text}");
+    assert!(
+        text.contains("RESULT    Command result: exit code 1."),
+        "{text}"
+    );
+}
+
+#[test]
 fn real_git_failure_shows_reported_error_without_generic_missing_claim() {
     let dir = tempfile::tempdir().unwrap();
     let output = Command::new(wtf_bin())
@@ -141,6 +188,10 @@ fn shell_record_discloses_missing_output_without_replaying_failed_action() {
     let json: serde_json::Value = serde_json::from_slice(&output.stdout).unwrap();
     assert_eq!(json["report"]["source_mode"], "shell_record");
     assert_eq!(json["report"]["capture"], "unavailable");
+    assert_eq!(
+        json["report"]["summary"],
+        "Recent command result: exit code 23; original output unavailable."
+    );
     assert!(json["report"]["claims"]
         .as_array()
         .unwrap()
