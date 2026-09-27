@@ -1,0 +1,30 @@
+{
+  "frozen_before_followup_execution": true,
+  "evaluation_type": "within-project-family-disjoint-followup",
+  "default_behavior": "no-model",
+  "comparison": "same sealed, redacted snapshots: --no-model versus --interpreter-model",
+  "selected_experimental_model": "bartowski/microsoft_Phi-4-mini-instruct-GGUF Q4_K_M",
+  "model_sha256": "01999f17c39cc3074afae5e9c539bc82d45f2dd7faa3917c66cbef76fce8c0c2",
+  "runtime": "llama.cpp 0.5.0-dev commit 9588757 unified llama serve --device none",
+  "runtime_sha256": "88adb7ef4d10b1b60f59db5e0f232fce3a13d6ce595506eb731b1ee78f50e5af",
+  "cli_binary_sha256": "98e25f5f1fa53c8d31145c5ac4fb359e2d84af008b32c6924ca40a82e0a87228",
+  "prompt_version": "generic-evidence-1",
+  "model_config": {"device": "none", "context_tokens": 2048, "max_completion_tokens": 192, "temperature": 0, "deadline_seconds": 30, "endpoint": "private-unix-socket:/v1/chat/completions", "tools": "disabled"},
+  "source_sha256": {
+    "crates/wtf-core/src/investigation.rs": "63e6565380ab04c1b64ccf374e31e964e859523db3ef598dc2928f00abcf9752",
+    "crates/wtf-core/src/adapters/mod.rs": "b61c61850d8bedf1ec114c7f9bf235cdf23b586128f60298d23c5a350731cae3",
+    "crates/wtf-core/src/capture.rs": "b9265dd678d3720f8cf1dcd75a3e2f813640e61026d396e5326a0c6ce5cbcb3a",
+    "crates/wtf-cli/src/main.rs": "7c614dcdf52526aab48a56429b58c3738df869acdfcbe0a2f5821bbe67cf3f54",
+    "crates/wtf-cli/src/report.rs": "3f9bf115b27153eae3901bd334ed1495137977ea64d96b3ae05ed9ffa6e9df1a",
+    "crates/wtf-cli/src/interpreter.rs": "582edc7d301bd3bcc80ebb3014ffeeee936bbe024b75909e50d4ddb35643d8f7",
+    "crates/wtf-cli/src/shell_install.rs": "8d8edc3e88ae310e955fc6d07c4c6a36ce9aebb2ad3e00a364f0bc0624f8d704",
+    "crates/wtf-cli/src/shell_state.rs": "2522bec02699151fa433683f1fe1a24c4beedfa170e31ce9051b73e326c33524",
+    "scripts/lab/followup.py": "6e1c664e9f9a713c9c77d6b55fd1671cc477dc7254543315799981f85c3e1d3e",
+    "docs/generic-evaluation.md": "b7dad665692b6fed535e3ac884c83b06f137eec88489bd6e5e011a62fd4577e2"
+  },
+  "followup_manifest_sha256": "8cf19b7fbbe9c1836e4c10e68c63b2f79441e942119b25038ece038e72fd912b",
+  "followup_oracle_sha256": "38c57bb1f0b4dedb9064c4b0917a65e9aa8fa05f9bf312c37f12ceaf597f4f9f",
+  "selection_basis": "Historical seven reserved families rejected promotion because a new tentative cause coincided with a false MISSING claim. Phi stays opt-in for a fresh family-disjoint comparator, without using old reserved cases to tune the prompt or model.",
+  "promotion_criterion": "Fresh family-disjoint paired user-visible evidence or discriminating NEXT gain with zero new unsupported factual claims or safety incidents; a paraphrase, changed wording or an invalid response does not qualify.",
+  "scoring_criteria": "docs/generic-evaluation.md"
+}

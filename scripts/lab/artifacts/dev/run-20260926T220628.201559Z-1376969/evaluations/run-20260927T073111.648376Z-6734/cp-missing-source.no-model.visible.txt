@@ -1,0 +1,4 @@
+✗  cp  1
+   RESULT    Reported: File does not exist.
+   OBSERVED  cp: cannot stat 'missing-input.txt': No such file or directory
+   MISSING   The original cause is not established by these observations.

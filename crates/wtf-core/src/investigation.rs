@@ -594,7 +594,10 @@ impl<R: ProbeRunner> InvestigationEngine<R> {
         deadline: Instant,
         coarse_errors: bool,
     ) -> Option<ProbeOutput> {
-        if result.attempts.len() >= self.max_probes || Instant::now() >= deadline {
+        if result.attempts.len() >= self.max_probes
+            || result.attempts.iter().any(|attempt| attempt.probe == id)
+            || Instant::now() >= deadline
+        {
             return None;
         }
         let mut spec = ProbeSpec::new(id, cwd, target)?;
@@ -638,59 +641,81 @@ impl<R: ProbeRunner> InvestigationEngine<R> {
         execution: &CommandExecution,
         diagnosis: &mut Diagnosis,
     ) -> Investigation {
-        if adapters::select(execution).is_none() {
-            let mut result = self.investigate(execution, diagnosis);
-            if execution.stdout.is_empty()
-                && execution.stderr.is_empty()
-                && result.attempts.is_empty()
-            {
-                if let Some(path) = literal_cat_path(execution) {
-                    self.cat_path(execution, &mut result, path);
-                }
-            }
-            return result;
-        }
-        let budget = self.max_duration;
-        let mut context =
-            AdapterContext::new(&self.runner, &execution.cwd, self.max_probes, budget);
-        let Some((adapter, finding)) = adapters::collect(execution, &mut context) else {
-            return self.investigate(execution, diagnosis);
+        let original_diagnosis = diagnosis.clone();
+        let deadline = Instant::now() + self.max_duration;
+        let (adapter_result, attempts) = {
+            let mut context = AdapterContext::with_deadline(
+                &self.runner,
+                &execution.cwd,
+                self.max_probes,
+                deadline,
+            );
+            let adapter_result = adapters::collect(execution, &mut context);
+            (adapter_result, context.attempts)
         };
         let mut result = Investigation {
-            adapter: Some(adapter),
-            attempts: context.attempts,
+            attempts,
             ..Investigation::default()
         };
-        let AdapterResult {
-            evidence,
-            finding,
-            note,
-        } = finding;
-        for item in evidence {
-            result.record(item.probe, safe_observation(&item.observation));
+        let adapter = if let Some((adapter, finding)) = adapter_result {
+            result.adapter = Some(adapter);
+            let AdapterResult {
+                evidence,
+                finding,
+                note,
+            } = finding;
+            for item in evidence {
+                result.record(item.probe, safe_observation(&item.observation));
+            }
+            result.reconstruction_note = note.map(|text| safe_observation(&text));
+            if adapter == "docker" && adapters::docker_targeted_error(&execution.stderr) {
+                // Only synthesized evidence belongs to this finding; captured output remains
+                // accessible through the explicit capture fields, not reclassified as proof.
+                diagnosis.evidence.clear();
+                diagnosis.detection = None;
+                diagnosis.remedy = None;
+            }
+            if let Some(finding) = finding {
+                result.apply_finding(finding, diagnosis);
+            } else if adapter == "systemctl" {
+                // Captured stderr is a symptom, not evidence for a service root cause.
+                diagnosis.category = Some("unknown".into());
+                diagnosis.summary = "The service failure could not be verified.".into();
+                diagnosis.status = crate::diagnosis::DiagnosisStatus::Unknown;
+            } else if adapter == "docker" && adapters::docker_targeted_error(&execution.stderr) {
+                // A daemon message alone, or contradictory current state, is not proof.
+                diagnosis.category = Some("unknown".into());
+                diagnosis.summary = "The Docker failure could not be verified.".into();
+                diagnosis.status = crate::diagnosis::DiagnosisStatus::Unknown;
+            }
+            Some(adapter)
+        } else {
+            None
+        };
+
+        // A Docker daemon error is about the adapter's exact run target. Its
+        // textual paths/ports may disagree with argv; generic detectors cannot
+        // safely infer a second target from that message and confirm it.
+        if !(adapter == Some("docker") && adapters::docker_targeted_error(&execution.stderr)) {
+            self.investigate_with_deadline(
+                execution,
+                &original_diagnosis,
+                &mut result,
+                deadline,
+                adapter,
+            );
         }
-        result.reconstruction_note = note.map(|text| safe_observation(&text));
-        if adapter == "docker" && adapters::docker_targeted_error(&execution.stderr) {
-            // Only synthesized evidence belongs to this finding; captured output remains
-            // accessible through the explicit capture fields, not reclassified as proof.
-            diagnosis.evidence.clear();
-            diagnosis.detection = None;
-            diagnosis.remedy = None;
+        if adapter.is_none()
+            && execution.stdout.is_empty()
+            && execution.stderr.is_empty()
+            && result.attempts.is_empty()
+        {
+            if let Some(path) = literal_cat_path(execution) {
+                self.cat_path(execution, &mut result, path, deadline);
+            }
         }
-        if let Some(finding) = finding {
-            result.apply_finding(finding, diagnosis);
-        } else if adapter == "systemctl" {
-            // Captured stderr is a symptom, not evidence for a service root cause.
-            diagnosis.category = Some("unknown".into());
-            diagnosis.summary = "The service failure could not be verified.".into();
-            diagnosis.status = crate::diagnosis::DiagnosisStatus::Unknown;
-        } else if adapter == "docker" && adapters::docker_targeted_error(&execution.stderr) {
-            // A daemon message alone, or contradictory current state, is not proof.
-            diagnosis.category = Some("unknown".into());
-            diagnosis.summary = "The Docker failure could not be verified.".into();
-            diagnosis.status = crate::diagnosis::DiagnosisStatus::Unknown;
-        }
-        if diagnosis.status == crate::diagnosis::DiagnosisStatus::Unknown
+        if adapter.is_some()
+            && diagnosis.status == crate::diagnosis::DiagnosisStatus::Unknown
             && result.root_cause.is_none()
             && result.reconstruction_note.is_none()
         {
@@ -706,29 +731,53 @@ impl<R: ProbeRunner> InvestigationEngine<R> {
         diagnosis: &Diagnosis,
     ) -> Investigation {
         let mut result = Investigation::default();
-        if execution.is_success() {
-            return result;
-        }
         let deadline = Instant::now() + self.max_duration;
+        self.investigate_with_deadline(execution, diagnosis, &mut result, deadline, None);
+        result
+    }
+
+    fn investigate_with_deadline(
+        &self,
+        execution: &CommandExecution,
+        diagnosis: &Diagnosis,
+        result: &mut Investigation,
+        deadline: Instant,
+        adapter: Option<&'static str>,
+    ) {
+        if execution.is_success() {
+            return;
+        }
         let cwd = execution.cwd.as_path();
+        let docker_targeted_error =
+            adapter == Some("docker") && adapters::docker_targeted_error(&execution.stderr);
         match diagnosis.category.as_deref() {
             Some("network/port-conflict")
             | Some("network/connection-refused")
             | Some("network/connect-failed") => {
-                self.network(execution, diagnosis, &mut result, cwd, deadline);
+                if !docker_targeted_error {
+                    self.network(
+                        execution,
+                        diagnosis,
+                        result,
+                        cwd,
+                        deadline,
+                        adapter != Some("docker"),
+                    );
+                }
             }
-            Some("network/dns") => self.dns(execution, &mut result, cwd, deadline),
-            Some("filesystem/disk-full") => self.disk(diagnosis, &mut result, cwd, deadline),
+            Some("network/dns") => self.dns(execution, result, cwd, deadline),
+            Some("filesystem/disk-full") => self.disk(diagnosis, result, cwd, deadline),
             Some("filesystem/not-found") | Some("filesystem/permission-denied") => {
-                self.file(diagnosis, &mut result, cwd, deadline);
+                self.file(diagnosis, result, cwd, deadline);
             }
             _ => {
-                if command_basename(&execution.command) == "docker" {
-                    self.docker(execution, diagnosis, &mut result, cwd, deadline, false);
+                // Docker's adapter verifies exact targets; do not widen that reconstruction
+                // into a second, uncorrelated current-state scan.
+                if command_basename(&execution.command) == "docker" && adapter != Some("docker") {
+                    self.docker(execution, diagnosis, result, cwd, deadline, false);
                 }
             }
         }
-        result
     }
 
     fn dns(
@@ -780,6 +829,7 @@ impl<R: ProbeRunner> InvestigationEngine<R> {
         result: &mut Investigation,
         cwd: &Path,
         deadline: Instant,
+        allow_docker_investigation: bool,
     ) {
         let port = match diagnosis.entities.primary_port() {
             Some(p) => p,
@@ -871,7 +921,7 @@ impl<R: ProbeRunner> InvestigationEngine<R> {
                 }
             }
         }
-        if !conflict && docker_command {
+        if !conflict && docker_command && allow_docker_investigation {
             self.docker(execution, diagnosis, result, cwd, deadline, true);
         }
     }
@@ -959,8 +1009,13 @@ impl<R: ProbeRunner> InvestigationEngine<R> {
         }
     }
 
-    fn cat_path(&self, execution: &CommandExecution, result: &mut Investigation, path: &str) {
-        let deadline = Instant::now() + self.max_duration;
+    fn cat_path(
+        &self,
+        execution: &CommandExecution,
+        result: &mut Investigation,
+        path: &str,
+        deadline: Instant,
+    ) {
         if let Some(out) = self.probe(result, &execution.cwd, ProbeId::Stat, Some(path), deadline) {
             if out.ok() {
                 if parse_stat(&out.stdout).is_some() {

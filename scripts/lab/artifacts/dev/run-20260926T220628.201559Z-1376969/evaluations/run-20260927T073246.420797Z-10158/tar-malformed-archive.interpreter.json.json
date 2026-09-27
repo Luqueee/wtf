@@ -1,0 +1,94 @@
+{
+  "category": "unknown",
+  "command": "/usr/bin/tar -xf malformed.tar",
+  "detection": null,
+  "duration": {
+    "nanos": 1896089,
+    "secs": 0
+  },
+  "entities": {
+    "containers": [],
+    "paths": [
+      "/usr/bin/tar"
+    ],
+    "ports": [],
+    "processes": [
+      "tar"
+    ],
+    "services": []
+  },
+  "evidence": [
+    "/usr/bin/tar: This does not look like a tar archive",
+    "/usr/bin/tar: Exiting with failure status due to previous errors"
+  ],
+  "exit_status": {
+    "code": 2,
+    "signal": null
+  },
+  "interpretation": {
+    "evidence_ids": [
+      "stderr"
+    ],
+    "missing": "Archive file path or content",
+    "next": "Check the file path and content for tar archive validity",
+    "possible": "Invalid tar archive"
+  },
+  "investigation": null,
+  "normalized": {
+    "clean_stderr": "/usr/bin/tar: This does not look like a tar archive\n/usr/bin/tar: Exiting with failure status due to previous errors\n\n",
+    "clean_stdout": "",
+    "collapsed_count": 0,
+    "relevant_lines": [
+      "/usr/bin/tar: This does not look like a tar archive",
+      "/usr/bin/tar: Exiting with failure status due to previous errors"
+    ]
+  },
+  "remedy": null,
+  "report": {
+    "capture": "captured",
+    "captured_at": 1790460388,
+    "checks": 0,
+    "claims": [
+      {
+        "kind": "observed",
+        "source": {
+          "field": "stderr",
+          "type": "execution"
+        },
+        "text": "/usr/bin/tar: This does not look like a tar archive"
+      },
+      {
+        "kind": "possible",
+        "source": {
+          "evidence_ids": [
+            "stderr"
+          ],
+          "type": "model"
+        },
+        "text": "May be: Invalid tar archive"
+      },
+      {
+        "kind": "missing",
+        "source": {
+          "type": "suggestion"
+        },
+        "text": "Archive file path or content"
+      },
+      {
+        "kind": "next",
+        "source": {
+          "type": "suggestion"
+        },
+        "text": "Check the file path and content for tar archive validity"
+      }
+    ],
+    "command_label": "tar",
+    "outcome": "2",
+    "reported_at": 1790494371,
+    "source_mode": "explicit",
+    "summary": "Command failed: exit code 2."
+  },
+  "schema_version": 1,
+  "status": "Unknown",
+  "summary": "Command failed with exit code 2."
+}

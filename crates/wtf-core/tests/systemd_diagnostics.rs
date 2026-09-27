@@ -89,7 +89,7 @@ impl ProbeRunner for FixtureRunner {
 
     fn available(&self, program: &str) -> bool {
         assert!(
-            matches!(program, "systemctl" | "journalctl"),
+            matches!(program, "systemctl" | "journalctl" | "df"),
             "systemd fixture was asked about unexpected executable {program:?}"
         );
         self.availability_queries
@@ -252,7 +252,7 @@ fn assert_read_only(outcome: &Outcome) {
         .runner
         .availability_queries()
         .iter()
-        .all(|program| matches!(program.as_str(), "systemctl" | "journalctl")));
+        .all(|program| matches!(program.as_str(), "systemctl" | "journalctl" | "df")));
 }
 
 fn assert_attempts(outcome: &Outcome, expected: &[ProbeId]) {
@@ -404,6 +404,18 @@ fn captured_output_and_metadata_only_failures_use_the_same_adapter_but_output_is
             .collect::<Vec<_>>(),
         [ProbeId::SystemdShow, ProbeId::SystemdLogs]
     );
+    assert_attempts(
+        &output_case,
+        &[
+            ProbeId::SystemdShow,
+            ProbeId::SystemdLogs,
+            ProbeId::Filesystem,
+            ProbeId::FilesystemInodes,
+        ],
+    );
+    assert!(output_case.investigation.attempts[2..]
+        .iter()
+        .all(|attempt| attempt.result == "unavailable"));
     assert_read_only(&output_case);
 
     let metadata_only = investigate(

@@ -1,0 +1,29 @@
+{
+  "execution": {
+    "command": "/usr/bin/curl",
+    "args": [
+      "--fail",
+      "--silent",
+      "--show-error",
+      "no-such-scheme://example.invalid/resource"
+    ],
+    "cwd": "<LAB_TMP>",
+    "exit_status": {
+      "code": 1,
+      "signal": null
+    },
+    "stdout": "",
+    "stderr": "curl: (1) Protocol \"no-such-scheme\" not supported\n",
+    "duration": {
+      "secs": 0,
+      "nanos": 4011747
+    },
+    "timestamp": {
+      "secs_since_epoch": 1790494894,
+      "nanos_since_epoch": 511281581
+    },
+    "spawn_error": null
+  },
+  "capture_truncated": false,
+  "source_mode": "explicit"
+}

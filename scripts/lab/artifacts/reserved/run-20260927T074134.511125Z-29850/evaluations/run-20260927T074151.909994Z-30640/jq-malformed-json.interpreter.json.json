@@ -1,0 +1,59 @@
+{
+  "category": "unknown",
+  "command": "/usr/bin/jq -e [REDACTED] malformed.json",
+  "detection": null,
+  "duration": {
+    "nanos": 3960368,
+    "secs": 0
+  },
+  "entities": {
+    "containers": [],
+    "paths": [],
+    "ports": [],
+    "processes": [
+      "jq"
+    ],
+    "services": []
+  },
+  "evidence": [
+    "jq: parse error: Unmatched '}' at line 1, column 11"
+  ],
+  "exit_status": {
+    "code": 5,
+    "signal": null
+  },
+  "interpretation_error": "invalid evidence reference: captured_at_unix",
+  "investigation": null,
+  "normalized": {
+    "clean_stderr": "jq: parse error: Unmatched '}' at line 1, column 11\n\n",
+    "clean_stdout": "",
+    "collapsed_count": 0,
+    "relevant_lines": [
+      "jq: parse error: Unmatched '}' at line 1, column 11"
+    ]
+  },
+  "remedy": null,
+  "report": {
+    "capture": "captured",
+    "captured_at": 1790494894,
+    "checks": 0,
+    "claims": [
+      {
+        "kind": "observed",
+        "source": {
+          "field": "stderr",
+          "type": "execution"
+        },
+        "text": "jq: parse error: Unmatched '}' at line 1, column 11"
+      }
+    ],
+    "command_label": "jq",
+    "outcome": "5",
+    "reported_at": 1790494923,
+    "source_mode": "explicit",
+    "summary": "Command failed: exit code 5."
+  },
+  "schema_version": 1,
+  "status": "Unknown",
+  "summary": "Command failed with exit code 5."
+}

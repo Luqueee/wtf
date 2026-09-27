@@ -1,0 +1,58 @@
+{
+  "category": "unknown",
+  "command": "/usr/bin/curl --fail --silent --show-error no-such-scheme://example.invalid/resource",
+  "detection": null,
+  "duration": {
+    "nanos": 4011747,
+    "secs": 0
+  },
+  "entities": {
+    "containers": [],
+    "paths": [],
+    "ports": [],
+    "processes": [
+      "curl"
+    ],
+    "services": []
+  },
+  "evidence": [
+    "curl: (1) Protocol \"no-such-scheme\" not supported"
+  ],
+  "exit_status": {
+    "code": 1,
+    "signal": null
+  },
+  "investigation": null,
+  "normalized": {
+    "clean_stderr": "curl: (1) Protocol \"no-such-scheme\" not supported\n\n",
+    "clean_stdout": "",
+    "collapsed_count": 0,
+    "relevant_lines": [
+      "curl: (1) Protocol \"no-such-scheme\" not supported"
+    ]
+  },
+  "remedy": null,
+  "report": {
+    "capture": "captured",
+    "captured_at": 1790494894,
+    "checks": 0,
+    "claims": [
+      {
+        "kind": "observed",
+        "source": {
+          "field": "stderr",
+          "type": "execution"
+        },
+        "text": "curl: (1) Protocol \"no-such-scheme\" not supported"
+      }
+    ],
+    "command_label": "curl",
+    "outcome": "1",
+    "reported_at": 1790494911,
+    "source_mode": "explicit",
+    "summary": "Command failed: exit code 1."
+  },
+  "schema_version": 1,
+  "status": "Unknown",
+  "summary": "Command failed with exit code 1."
+}

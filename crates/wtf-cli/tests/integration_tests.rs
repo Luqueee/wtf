@@ -6,6 +6,33 @@ fn wtf_bin() -> &'static str {
 }
 
 #[test]
+fn replay_uses_saved_execution_without_running_its_program_and_preserves_status() {
+    let dir = tempfile::tempdir().unwrap();
+    let marker = dir.path().join("must-not-exist");
+    let snapshot = dir.path().join("snapshot.json");
+    let execution = serde_json::json!({
+        "execution": {
+            "command": "/usr/bin/touch", "args": [marker.to_str().unwrap()],
+            "cwd": dir.path(), "exit_status": {"code": 37, "signal": null},
+            "stdout": "", "stderr": "cannot create output: configuration conflict",
+            "duration": {"secs": 0, "nanos": 0}, "timestamp": {"secs_since_epoch": 1700000000, "nanos_since_epoch": 0},
+            "spawn_error": null
+        },
+        "capture_truncated": false
+    });
+    std::fs::write(&snapshot, serde_json::to_vec(&execution).unwrap()).unwrap();
+    let output = Command::new(wtf_bin())
+        .args(["--json", "--replay-snapshot", snapshot.to_str().unwrap()])
+        .output()
+        .unwrap();
+    assert_eq!(output.status.code(), Some(37));
+    assert!(!marker.exists());
+    let json: serde_json::Value = serde_json::from_slice(&output.stdout).unwrap();
+    assert_eq!(json["report"]["claims"][0]["source"]["field"], "stderr");
+    assert_eq!(json["report"]["checks"], 0);
+}
+
+#[test]
 fn known_failure_reports_origin_and_exit_status_without_fixing_it() {
     let dir = tempfile::tempdir().unwrap();
     let missing = dir.path().join("missing");
@@ -20,7 +47,9 @@ fn known_failure_reports_origin_and_exit_status_without_fixing_it() {
     assert_eq!(json["report"]["outcome"], "1");
     assert_eq!(json["report"]["capture"], "captured");
     assert_eq!(json["report"]["claims"][0]["kind"], "observed");
-    assert_eq!(json["report"]["claims"][0]["source"]["type"], "probe");
+    assert_eq!(json["report"]["claims"][0]["source"]["type"], "execution");
+    assert_eq!(json["report"]["claims"][0]["source"]["field"], "stderr");
+    assert_eq!(json["report"]["claims"][1]["source"]["type"], "probe");
     assert_eq!(json["category"], "filesystem/not-found");
     assert!(!missing.exists());
 }
@@ -256,6 +285,37 @@ fn successful_command_is_reported_and_output_requires_explicit_request() {
 }
 
 #[test]
+fn live_capture_streams_once_and_preserves_command_status() {
+    let dir = tempfile::tempdir().unwrap();
+    let marker = dir.path().join("launch-count");
+    let script = "printf x >> \"$1\"; printf 'visible child stdout\\n'; printf 'child failed: fixture\\n' >&2; exit 23";
+    let output = Command::new(wtf_bin())
+        .args([
+            "--no-color",
+            "--live",
+            "--",
+            "sh",
+            "-c",
+            script,
+            "sh",
+            marker.to_str().unwrap(),
+        ])
+        .output()
+        .unwrap();
+    assert_eq!(output.status.code(), Some(23));
+    assert_eq!(std::fs::read(&marker).unwrap(), b"x");
+    let stdout = String::from_utf8(output.stdout).unwrap();
+    assert!(stdout.starts_with("visible child stdout\n"), "{stdout}");
+    assert_eq!(stdout.matches("visible child stdout").count(), 1);
+    assert!(stdout.contains("sh  23"), "{stdout}");
+    assert!(stdout.contains("child failed: fixture"), "{stdout}");
+    assert_eq!(
+        String::from_utf8(output.stderr).unwrap(),
+        "child failed: fixture\n"
+    );
+}
+
+#[test]
 fn spawn_failure_and_signal_keep_distinct_outcomes() {
     let absent = Command::new(wtf_bin())
         .args(["--json", "--", "definitely-absent-wtf-command-93850"])
@@ -273,7 +333,7 @@ fn spawn_failure_and_signal_keep_distinct_outcomes() {
         .args(["--json", "--", "sh", "-c", "kill -TERM $$"])
         .output()
         .unwrap();
-    assert_eq!(signaled.status.code(), Some(1));
+    assert_eq!(signaled.status.code(), Some(143));
     let json: serde_json::Value = serde_json::from_slice(&signaled.stdout).unwrap();
     assert_eq!(json["report"]["outcome"], "signal 15");
     assert_eq!(json["exit_status"]["signal"], 15);

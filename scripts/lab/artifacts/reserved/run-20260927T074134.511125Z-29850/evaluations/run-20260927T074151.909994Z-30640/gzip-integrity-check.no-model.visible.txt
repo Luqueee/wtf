@@ -1,0 +1,3 @@
+✗  gzip  1
+   RESULT    Command failed: exit code 1.
+   OBSERVED  gzip: damaged.gz: invalid compressed data--format [REDACTED]

@@ -1,0 +1,54 @@
+{
+  "category": "unknown",
+  "command": "/usr/bin/false",
+  "detection": null,
+  "duration": {
+    "nanos": 876690,
+    "secs": 0
+  },
+  "entities": {
+    "containers": [],
+    "paths": [],
+    "ports": [],
+    "processes": [
+      "false"
+    ],
+    "services": []
+  },
+  "evidence": [],
+  "exit_status": {
+    "code": 1,
+    "signal": null
+  },
+  "investigation": null,
+  "normalized": {
+    "clean_stderr": "",
+    "clean_stdout": "",
+    "collapsed_count": 0,
+    "relevant_lines": []
+  },
+  "remedy": null,
+  "report": {
+    "capture": "captured",
+    "captured_at": 1790460388,
+    "checks": 0,
+    "claims": [
+      {
+        "kind": "missing",
+        "source": {
+          "field": "capture",
+          "type": "metadata"
+        },
+        "text": "No failure detail was captured."
+      }
+    ],
+    "command_label": "false",
+    "outcome": "1",
+    "reported_at": 1790494396,
+    "source_mode": "explicit",
+    "summary": "Command failed: exit code 1."
+  },
+  "schema_version": 1,
+  "status": "Unknown",
+  "summary": "Command failed with exit code 1."
+}

@@ -1,0 +1,5 @@
+✗  git  128
+   RESULT    Command failed: exit code 128.
+   OBSERVED  fatal: not a git repository (or any of the parent directories): .git
+   POSSIBLE  May be: The command failed because the current directory is not a Git repository.
+   NEXT      Check if the current directory contains a .git folder.

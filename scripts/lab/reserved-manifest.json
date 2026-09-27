@@ -1,0 +1,71 @@
+{
+  "schema_version": 1,
+  "suite": "reserved",
+  "capture_limit_bytes_per_stream": 4096,
+  "resource_limits": {
+    "cpu_seconds_soft": 3,
+    "cpu_seconds_hard": 4,
+    "address_space_bytes": 536870912,
+    "file_size_bytes": 8388608,
+    "open_files": 64,
+    "core_dumps": 0
+  },
+  "cases": [
+    {
+      "id": "curl-invalid-scheme",
+      "family": "url-syntax",
+      "program": "curl",
+      "args": ["--fail", "--silent", "--show-error", "no-such-scheme://example.invalid/resource"],
+      "timeout_seconds": 3.0,
+      "setup": []
+    },
+    {
+      "id": "gzip-integrity-check",
+      "family": "compressed-stream-integrity",
+      "program": "gzip",
+      "args": ["-t", "--", "damaged.gz"],
+      "timeout_seconds": 3.0,
+      "setup": [{"op": "write_bytes_hex", "path": "damaged.gz", "hex": "1f8b0800000000000003ffffffffffff"}]
+    },
+    {
+      "id": "sha256sum-missing-input",
+      "family": "digest-input",
+      "program": "sha256sum",
+      "args": ["--", "missing-digest-input.bin"],
+      "timeout_seconds": 3.0,
+      "setup": []
+    },
+    {
+      "id": "jq-malformed-json",
+      "family": "json-parse",
+      "program": "jq",
+      "args": ["-e", ".", "malformed.json"],
+      "timeout_seconds": 3.0,
+      "setup": [{"op": "write_text", "path": "malformed.json", "content": "{\"field\": }\n"}]
+    },
+    {
+      "id": "iconv-unknown-charset",
+      "family": "character-encoding",
+      "program": "iconv",
+      "args": ["--from-code=not-a-real-encoding", "--to-code=UTF-8", "input.txt"],
+      "timeout_seconds": 3.0,
+      "setup": [{"op": "write_text", "path": "input.txt", "content": "plain fixture text\n"}]
+    },
+    {
+      "id": "env-missing-program",
+      "family": "child-path-resolution",
+      "program": "env",
+      "args": ["-i", "PATH=/nonexistent", "lab-command-that-does-not-exist"],
+      "timeout_seconds": 3.0,
+      "setup": []
+    },
+    {
+      "id": "awk-invalid-program",
+      "family": "awk-parse",
+      "program": "awk",
+      "args": ["BEGIN {"],
+      "timeout_seconds": 3.0,
+      "setup": []
+    }
+  ]
+}

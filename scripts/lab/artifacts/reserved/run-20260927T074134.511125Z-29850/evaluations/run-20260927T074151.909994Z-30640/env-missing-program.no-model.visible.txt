@@ -1,0 +1,4 @@
+✗  env  127
+   RESULT    Reported: File does not exist.
+   OBSERVED  env=[REDACTED] 'lab-command-that-does-not-exist': No such file or directory
+   MISSING   The original cause is not established by these observations.

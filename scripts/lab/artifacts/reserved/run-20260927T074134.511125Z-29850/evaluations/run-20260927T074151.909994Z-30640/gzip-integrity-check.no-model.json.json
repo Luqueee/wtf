@@ -1,0 +1,58 @@
+{
+  "category": "unknown",
+  "command": "/usr/bin/gzip -t -- damaged.gz",
+  "detection": null,
+  "duration": {
+    "nanos": 4280458,
+    "secs": 0
+  },
+  "entities": {
+    "containers": [],
+    "paths": [],
+    "ports": [],
+    "processes": [
+      "gzip"
+    ],
+    "services": []
+  },
+  "evidence": [
+    "gzip: damaged.gz: invalid compressed data--format [REDACTED]"
+  ],
+  "exit_status": {
+    "code": 1,
+    "signal": null
+  },
+  "investigation": null,
+  "normalized": {
+    "clean_stderr": "\ngzip: damaged.gz: invalid compressed data--format [REDACTED]\n\n",
+    "clean_stdout": "",
+    "collapsed_count": 0,
+    "relevant_lines": [
+      "gzip: damaged.gz: invalid compressed data--format [REDACTED]"
+    ]
+  },
+  "remedy": null,
+  "report": {
+    "capture": "captured",
+    "captured_at": 1790494894,
+    "checks": 0,
+    "claims": [
+      {
+        "kind": "observed",
+        "source": {
+          "field": "stderr",
+          "type": "execution"
+        },
+        "text": "gzip: damaged.gz: invalid compressed data--format [REDACTED]"
+      }
+    ],
+    "command_label": "gzip",
+    "outcome": "1",
+    "reported_at": 1790494915,
+    "source_mode": "explicit",
+    "summary": "Command failed: exit code 1."
+  },
+  "schema_version": 1,
+  "status": "Unknown",
+  "summary": "Command failed with exit code 1."
+}

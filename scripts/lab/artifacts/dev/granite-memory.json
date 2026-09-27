@@ -1,0 +1,195 @@
+{
+  "model": "/home/devlabs/.cache/wtf-model-research/models/granite-3.3-2b/granite-3.3-2b-instruct-Q4_K_M.gguf",
+  "runtime": "/home/devlabs/.cache/wtf-model-research/llama.cpp/build-cuda/bin/llama",
+  "snapshot": "scripts/lab/artifacts/dev/run-20260926T220628.201559Z-1376969/tar-malformed-archive.snapshot.json",
+  "baseline_other_process_mib": 13,
+  "context_limit_tokens": 2048,
+  "max_generation_tokens": 192,
+  "load_seconds": 0.6028647910000018,
+  "response_seconds": 1.3879461739999783,
+  "usage": {
+    "completion_tokens": 192,
+    "prompt_tokens": 264,
+    "total_tokens": 456,
+    "prompt_tokens_details": {
+      "cached_tokens": 0
+    }
+  },
+  "finish_reason": "length",
+  "peak_total_mib": 1865,
+  "peak_load_mib": 1855,
+  "peak_request_mib": 1865,
+  "method": "nvidia-smi memory.used polled approximately every 50 ms; total device usage includes other processes",
+  "samples": [
+    {
+      "seconds": 484.996528927,
+      "stage": "load",
+      "used_mib": 13
+    },
+    {
+      "seconds": 485.05759764,
+      "stage": "load",
+      "used_mib": 15
+    },
+    {
+      "seconds": 485.161648674,
+      "stage": "load",
+      "used_mib": 30
+    },
+    {
+      "seconds": 485.224065476,
+      "stage": "load",
+      "used_mib": 141
+    },
+    {
+      "seconds": 485.284839889,
+      "stage": "load",
+      "used_mib": 1615
+    },
+    {
+      "seconds": 485.347110301,
+      "stage": "load",
+      "used_mib": 1615
+    },
+    {
+      "seconds": 485.407960545,
+      "stage": "load",
+      "used_mib": 1615
+    },
+    {
+      "seconds": 485.468346629,
+      "stage": "load",
+      "used_mib": 1615
+    },
+    {
+      "seconds": 485.528700493,
+      "stage": "load",
+      "used_mib": 1839
+    },
+    {
+      "seconds": 485.589533226,
+      "stage": "load",
+      "used_mib": 1855
+    },
+    {
+      "seconds": 485.648813111,
+      "stage": "prefill_and_generate",
+      "used_mib": 1865
+    },
+    {
+      "seconds": 485.710759163,
+      "stage": "prefill_and_generate",
+      "used_mib": 1865
+    },
+    {
+      "seconds": 485.771840077,
+      "stage": "prefill_and_generate",
+      "used_mib": 1865
+    },
+    {
+      "seconds": 485.833301409,
+      "stage": "prefill_and_generate",
+      "used_mib": 1865
+    },
+    {
+      "seconds": 485.894934162,
+      "stage": "prefill_and_generate",
+      "used_mib": 1865
+    },
+    {
+      "seconds": 485.956548784,
+      "stage": "prefill_and_generate",
+      "used_mib": 1865
+    },
+    {
+      "seconds": 486.018235407,
+      "stage": "prefill_and_generate",
+      "used_mib": 1865
+    },
+    {
+      "seconds": 486.07933284,
+      "stage": "prefill_and_generate",
+      "used_mib": 1865
+    },
+    {
+      "seconds": 486.141014652,
+      "stage": "prefill_and_generate",
+      "used_mib": 1865
+    },
+    {
+      "seconds": 486.201535846,
+      "stage": "prefill_and_generate",
+      "used_mib": 1865
+    },
+    {
+      "seconds": 486.262941909,
+      "stage": "prefill_and_generate",
+      "used_mib": 1865
+    },
+    {
+      "seconds": 486.323948922,
+      "stage": "prefill_and_generate",
+      "used_mib": 1865
+    },
+    {
+      "seconds": 486.385416414,
+      "stage": "prefill_and_generate",
+      "used_mib": 1865
+    },
+    {
+      "seconds": 486.446695767,
+      "stage": "prefill_and_generate",
+      "used_mib": 1865
+    },
+    {
+      "seconds": 486.50791956,
+      "stage": "prefill_and_generate",
+      "used_mib": 1865
+    },
+    {
+      "seconds": 486.569027503,
+      "stage": "prefill_and_generate",
+      "used_mib": 1865
+    },
+    {
+      "seconds": 486.630713525,
+      "stage": "prefill_and_generate",
+      "used_mib": 1865
+    },
+    {
+      "seconds": 486.691714319,
+      "stage": "prefill_and_generate",
+      "used_mib": 1865
+    },
+    {
+      "seconds": 486.753510881,
+      "stage": "prefill_and_generate",
+      "used_mib": 1865
+    },
+    {
+      "seconds": 486.814504973,
+      "stage": "prefill_and_generate",
+      "used_mib": 1865
+    },
+    {
+      "seconds": 486.875116377,
+      "stage": "prefill_and_generate",
+      "used_mib": 1865
+    },
+    {
+      "seconds": 486.937454269,
+      "stage": "prefill_and_generate",
+      "used_mib": 1865
+    },
+    {
+      "seconds": 486.998890901,
+      "stage": "loaded",
+      "used_mib": 163
+    },
+    {
+      "seconds": 487.062732961,
+      "stage": "loaded",
+      "used_mib": 13
+    }
+  ]
+}

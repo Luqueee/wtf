@@ -1,0 +1,66 @@
+{
+  "schema_version": 1,
+  "suite": "followup",
+  "capture_limit_bytes_per_stream": 4096,
+  "resource_limits": {
+    "cpu_seconds_soft": 3,
+    "cpu_seconds_hard": 4,
+    "address_space_bytes": 536870912,
+    "file_size_bytes": 8388608,
+    "open_files": 64,
+    "core_dumps": 0
+  },
+  "cases": [
+    {
+      "id": "base64-invalid-alphabet",
+      "family": "base64-decode",
+      "program": "base64",
+      "args": ["--decode", "encoded.txt"],
+      "timeout_seconds": 3.0,
+      "setup": [{"op": "write_text", "path": "encoded.txt", "content": "not?base64!\n"}]
+    },
+    {
+      "id": "sort-invalid-separator",
+      "family": "sort-option-parse",
+      "program": "sort",
+      "args": ["--field-separator=::", "input.txt"],
+      "timeout_seconds": 3.0,
+      "setup": [{"op": "write_text", "path": "input.txt", "content": "a::b\n"}]
+    },
+    {
+      "id": "diff-files-differ",
+      "family": "difference-status",
+      "program": "diff",
+      "args": ["--", "before.txt", "after.txt"],
+      "timeout_seconds": 3.0,
+      "setup": [
+        {"op": "write_text", "path": "before.txt", "content": "first\n"},
+        {"op": "write_text", "path": "after.txt", "content": "second\n"}
+      ]
+    },
+    {
+      "id": "date-invalid-calendar",
+      "family": "calendar-parse",
+      "program": "date",
+      "args": ["--date=2020-13-40"],
+      "timeout_seconds": 3.0,
+      "setup": []
+    },
+    {
+      "id": "head-invalid-count",
+      "family": "numeric-option-parse",
+      "program": "head",
+      "args": ["--bytes=not-a-number", "input.txt"],
+      "timeout_seconds": 3.0,
+      "setup": [{"op": "write_text", "path": "input.txt", "content": "known text\n"}]
+    },
+    {
+      "id": "find-invalid-depth",
+      "family": "traversal-option-parse",
+      "program": "find",
+      "args": [".", "-maxdepth", "not-a-number", "-print"],
+      "timeout_seconds": 3.0,
+      "setup": []
+    }
+  ]
+}

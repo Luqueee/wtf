@@ -1,0 +1,270 @@
+{
+  "suite": "followup",
+  "manifest_sha256": "8cf19b7fbbe9c1836e4c10e68c63b2f79441e942119b25038ece038e72fd912b",
+  "oracle_sha256": "38c57bb1f0b4dedb9064c4b0917a65e9aa8fa05f9bf312c37f12ceaf597f4f9f",
+  "cli_sha256": "98e25f5f1fa53c8d31145c5ac4fb359e2d84af008b32c6924ca40a82e0a87228",
+  "model_sha256": "01999f17c39cc3074afae5e9c539bc82d45f2dd7faa3917c66cbef76fce8c0c2",
+  "runtime_sha256": "88adb7ef4d10b1b60f59db5e0f232fce3a13d6ce595506eb731b1ee78f50e5af",
+  "source_commands_rerun": false,
+  "probes_rerun": false,
+  "cases": [
+    {
+      "case_id": "base64-invalid-alphabet",
+      "family": "base64-decode",
+      "oracle_status_match": true,
+      "calls": [
+        {
+          "profile": "no-model",
+          "format": "visible",
+          "file": "base64-invalid-alphabet.no-model.visible.txt",
+          "result": "exit-status-matches-execution",
+          "json_valid": null,
+          "duration_ms": 15.856,
+          "stderr": ""
+        },
+        {
+          "profile": "no-model",
+          "format": "json",
+          "file": "base64-invalid-alphabet.no-model.json.json",
+          "result": "exit-status-matches-execution",
+          "json_valid": true,
+          "duration_ms": 15.596,
+          "stderr": ""
+        },
+        {
+          "profile": "interpreter",
+          "format": "visible",
+          "file": "base64-invalid-alphabet.interpreter.visible.txt",
+          "result": "exit-status-matches-execution",
+          "json_valid": null,
+          "duration_ms": 3671.011,
+          "stderr": ""
+        },
+        {
+          "profile": "interpreter",
+          "format": "json",
+          "file": "base64-invalid-alphabet.interpreter.json.json",
+          "result": "exit-status-matches-execution",
+          "json_valid": true,
+          "duration_ms": 3620.455,
+          "stderr": ""
+        }
+      ]
+    },
+    {
+      "case_id": "sort-invalid-separator",
+      "family": "sort-option-parse",
+      "oracle_status_match": true,
+      "calls": [
+        {
+          "profile": "no-model",
+          "format": "visible",
+          "file": "sort-invalid-separator.no-model.visible.txt",
+          "result": "exit-status-matches-execution",
+          "json_valid": null,
+          "duration_ms": 15.664,
+          "stderr": ""
+        },
+        {
+          "profile": "no-model",
+          "format": "json",
+          "file": "sort-invalid-separator.no-model.json.json",
+          "result": "exit-status-matches-execution",
+          "json_valid": true,
+          "duration_ms": 15.691,
+          "stderr": ""
+        },
+        {
+          "profile": "interpreter",
+          "format": "visible",
+          "file": "sort-invalid-separator.interpreter.visible.txt",
+          "result": "exit-status-matches-execution",
+          "json_valid": null,
+          "duration_ms": 4121.699,
+          "stderr": ""
+        },
+        {
+          "profile": "interpreter",
+          "format": "json",
+          "file": "sort-invalid-separator.interpreter.json.json",
+          "result": "exit-status-matches-execution",
+          "json_valid": true,
+          "duration_ms": 4322.299,
+          "stderr": ""
+        }
+      ]
+    },
+    {
+      "case_id": "diff-files-differ",
+      "family": "difference-status",
+      "oracle_status_match": true,
+      "calls": [
+        {
+          "profile": "no-model",
+          "format": "visible",
+          "file": "diff-files-differ.no-model.visible.txt",
+          "result": "exit-status-matches-execution",
+          "json_valid": null,
+          "duration_ms": 15.656,
+          "stderr": ""
+        },
+        {
+          "profile": "no-model",
+          "format": "json",
+          "file": "diff-files-differ.no-model.json.json",
+          "result": "exit-status-matches-execution",
+          "json_valid": true,
+          "duration_ms": 15.448,
+          "stderr": ""
+        },
+        {
+          "profile": "interpreter",
+          "format": "visible",
+          "file": "diff-files-differ.interpreter.visible.txt",
+          "result": "exit-status-matches-execution",
+          "json_valid": null,
+          "duration_ms": 3620.664,
+          "stderr": ""
+        },
+        {
+          "profile": "interpreter",
+          "format": "json",
+          "file": "diff-files-differ.interpreter.json.json",
+          "result": "exit-status-matches-execution",
+          "json_valid": true,
+          "duration_ms": 3621.026,
+          "stderr": ""
+        }
+      ]
+    },
+    {
+      "case_id": "date-invalid-calendar",
+      "family": "calendar-parse",
+      "oracle_status_match": true,
+      "calls": [
+        {
+          "profile": "no-model",
+          "format": "visible",
+          "file": "date-invalid-calendar.no-model.visible.txt",
+          "result": "exit-status-matches-execution",
+          "json_valid": null,
+          "duration_ms": 15.745,
+          "stderr": ""
+        },
+        {
+          "profile": "no-model",
+          "format": "json",
+          "file": "date-invalid-calendar.no-model.json.json",
+          "result": "exit-status-matches-execution",
+          "json_valid": true,
+          "duration_ms": 15.543,
+          "stderr": ""
+        },
+        {
+          "profile": "interpreter",
+          "format": "visible",
+          "file": "date-invalid-calendar.interpreter.visible.txt",
+          "result": "exit-status-matches-execution",
+          "json_valid": null,
+          "duration_ms": 4221.679,
+          "stderr": ""
+        },
+        {
+          "profile": "interpreter",
+          "format": "json",
+          "file": "date-invalid-calendar.interpreter.json.json",
+          "result": "exit-status-matches-execution",
+          "json_valid": true,
+          "duration_ms": 4221.71,
+          "stderr": ""
+        }
+      ]
+    },
+    {
+      "case_id": "head-invalid-count",
+      "family": "numeric-option-parse",
+      "oracle_status_match": true,
+      "calls": [
+        {
+          "profile": "no-model",
+          "format": "visible",
+          "file": "head-invalid-count.no-model.visible.txt",
+          "result": "exit-status-matches-execution",
+          "json_valid": null,
+          "duration_ms": 15.704,
+          "stderr": ""
+        },
+        {
+          "profile": "no-model",
+          "format": "json",
+          "file": "head-invalid-count.no-model.json.json",
+          "result": "exit-status-matches-execution",
+          "json_valid": true,
+          "duration_ms": 15.513,
+          "stderr": ""
+        },
+        {
+          "profile": "interpreter",
+          "format": "visible",
+          "file": "head-invalid-count.interpreter.visible.txt",
+          "result": "exit-status-matches-execution",
+          "json_valid": null,
+          "duration_ms": 3971.411,
+          "stderr": ""
+        },
+        {
+          "profile": "interpreter",
+          "format": "json",
+          "file": "head-invalid-count.interpreter.json.json",
+          "result": "exit-status-matches-execution",
+          "json_valid": true,
+          "duration_ms": 3921.771,
+          "stderr": ""
+        }
+      ]
+    },
+    {
+      "case_id": "find-invalid-depth",
+      "family": "traversal-option-parse",
+      "oracle_status_match": true,
+      "calls": [
+        {
+          "profile": "no-model",
+          "format": "visible",
+          "file": "find-invalid-depth.no-model.visible.txt",
+          "result": "exit-status-matches-execution",
+          "json_valid": null,
+          "duration_ms": 15.628,
+          "stderr": ""
+        },
+        {
+          "profile": "no-model",
+          "format": "json",
+          "file": "find-invalid-depth.no-model.json.json",
+          "result": "exit-status-matches-execution",
+          "json_valid": true,
+          "duration_ms": 15.479,
+          "stderr": ""
+        },
+        {
+          "profile": "interpreter",
+          "format": "visible",
+          "file": "find-invalid-depth.interpreter.visible.txt",
+          "result": "exit-status-matches-execution",
+          "json_valid": null,
+          "duration_ms": 4572.456,
+          "stderr": ""
+        },
+        {
+          "profile": "interpreter",
+          "format": "json",
+          "file": "find-invalid-depth.interpreter.json.json",
+          "result": "exit-status-matches-execution",
+          "json_valid": true,
+          "duration_ms": 4573.518,
+          "stderr": ""
+        }
+      ]
+    }
+  ]
+}

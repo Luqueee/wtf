@@ -1,0 +1,111 @@
+{
+  "category": "filesystem/not-found",
+  "command": "/usr/bin/env -i PATH=/nonexistent lab-command-that-does-not-exist",
+  "detection": {
+    "category": "filesystem/not-found",
+    "confidence": 0.949999988079071,
+    "detector_id": "file_not_found",
+    "entities": {
+      "containers": [],
+      "paths": [],
+      "ports": [],
+      "processes": [
+        "env"
+      ],
+      "services": []
+    },
+    "evidence": [
+      "env=[REDACTED] 'lab-command-that-does-not-exist': No such file or directory"
+    ],
+    "remedy": null,
+    "summary": "File does not exist."
+  },
+  "duration": {
+    "nanos": 739910,
+    "secs": 0
+  },
+  "entities": {
+    "containers": [],
+    "paths": [],
+    "ports": [],
+    "processes": [
+      "env"
+    ],
+    "services": []
+  },
+  "evidence": [
+    "env=[REDACTED] 'lab-command-that-does-not-exist': No such file or directory"
+  ],
+  "exit_status": {
+    "code": 127,
+    "signal": null
+  },
+  "interpretation": {
+    "evidence_ids": [
+      "stderr"
+    ],
+    "missing": "The actual command name that failed.",
+    "next": "Verify the spelling of the command and check if it exists in the PATH.",
+    "possible": "The 'lab-command-that-does-not-exist' is not found in the PATH or is misspelled."
+  },
+  "investigation": null,
+  "normalized": {
+    "clean_stderr": "env=[REDACTED] 'lab-command-that-does-not-exist': No such file or directory\n\n",
+    "clean_stdout": "",
+    "collapsed_count": 0,
+    "relevant_lines": [
+      "env=[REDACTED] 'lab-command-that-does-not-exist': No such file or directory"
+    ]
+  },
+  "remedy": null,
+  "report": {
+    "capture": "captured",
+    "captured_at": 1790494894,
+    "checks": 0,
+    "claims": [
+      {
+        "kind": "observed",
+        "source": {
+          "field": "stderr",
+          "type": "execution"
+        },
+        "text": "env=[REDACTED] 'lab-command-that-does-not-exist': No such file or directory"
+      },
+      {
+        "kind": "possible",
+        "source": {
+          "evidence_ids": [
+            "stderr"
+          ],
+          "type": "model"
+        },
+        "text": "May be: The 'lab-command-that-does-not-exist' is not found in the PATH or is misspelled."
+      },
+      {
+        "kind": "missing",
+        "source": {
+          "evidence_ids": [
+            "stderr"
+          ],
+          "type": "model"
+        },
+        "text": "The actual command name that failed."
+      },
+      {
+        "kind": "next",
+        "source": {
+          "type": "suggestion"
+        },
+        "text": "Verify the spelling of the command and check if it exists in the PATH."
+      }
+    ],
+    "command_label": "env",
+    "outcome": "127",
+    "reported_at": 1790494930,
+    "source_mode": "explicit",
+    "summary": "Reported: File does not exist."
+  },
+  "schema_version": 1,
+  "status": "Likely",
+  "summary": "File does not exist."
+}

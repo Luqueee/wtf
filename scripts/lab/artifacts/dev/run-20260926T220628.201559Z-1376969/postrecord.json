@@ -1,0 +1,239 @@
+{
+  "schema_version": 1,
+  "suite": "dev",
+  "manifest_sha256": "aada1014a35138459bd9df9f6e4a0845fb7d5511303bafe6a52790e194dcae3c",
+  "oracle_sha256": "897de7022fd79e407e367fb0c72cf17db18e91b3d839f182f43430e27983c7ff",
+  "run_id": "run-20260926T220628.201559Z-1376969",
+  "launch_attempts_total": 9,
+  "reserved_cases_executed": 0,
+  "resource_limits": {
+    "cpu_seconds_soft": 3,
+    "cpu_seconds_hard": 4,
+    "address_space_bytes": 536870912,
+    "file_size_bytes": 8388608,
+    "open_files": 64,
+    "core_dumps": 0
+  },
+  "capture_limit_bytes_per_stream": 4096,
+  "cleanup": "case tempdirs removed by TemporaryDirectory before postrecord write",
+  "cases": [
+    {
+      "case_id": "cp-missing-source",
+      "family": "filesystem-copy",
+      "program": "cp",
+      "launch_attempts": 1,
+      "timed_out": false,
+      "exit_status": {
+        "code": 1,
+        "signal": null
+      },
+      "spawn_error": false,
+      "truncated_streams": [],
+      "observed_output_bytes": {
+        "stdout": 0,
+        "stderr": 63
+      },
+      "duration": {
+        "secs": 0,
+        "nanos": 1759639
+      },
+      "snapshot": "cp-missing-source.snapshot.json",
+      "snapshot_sha256": "fcae52eba4164be6b5bb37f5a073036552644fa2a2d0b8bb8411f09a09c399f0",
+      "oracle_status_match": true
+    },
+    {
+      "case_id": "grep-no-match",
+      "family": "pattern-search",
+      "program": "grep",
+      "launch_attempts": 1,
+      "timed_out": false,
+      "exit_status": {
+        "code": 1,
+        "signal": null
+      },
+      "spawn_error": false,
+      "truncated_streams": [],
+      "observed_output_bytes": {
+        "stdout": 0,
+        "stderr": 0
+      },
+      "duration": {
+        "secs": 0,
+        "nanos": 1810400
+      },
+      "snapshot": "grep-no-match.snapshot.json",
+      "snapshot_sha256": "868d13a3cc1582d19a93c6ca8805e5c53c756f265c01cf7e41a376fdfd5298a3",
+      "oracle_status_match": true
+    },
+    {
+      "case_id": "tar-malformed-archive",
+      "family": "archive-read",
+      "program": "tar",
+      "launch_attempts": 1,
+      "timed_out": false,
+      "exit_status": {
+        "code": 2,
+        "signal": null
+      },
+      "spawn_error": false,
+      "truncated_streams": [],
+      "observed_output_bytes": {
+        "stdout": 0,
+        "stderr": 117
+      },
+      "duration": {
+        "secs": 0,
+        "nanos": 1896089
+      },
+      "snapshot": "tar-malformed-archive.snapshot.json",
+      "snapshot_sha256": "95bb62e21d45411c791618c7670b35b53332574f08e9e37c431414f14400266f",
+      "oracle_status_match": true
+    },
+    {
+      "case_id": "sed-invalid-expression",
+      "family": "text-transform",
+      "program": "sed",
+      "launch_attempts": 1,
+      "timed_out": false,
+      "exit_status": {
+        "code": 1,
+        "signal": null
+      },
+      "spawn_error": false,
+      "truncated_streams": [],
+      "observed_output_bytes": {
+        "stdout": 0,
+        "stderr": 65
+      },
+      "duration": {
+        "secs": 0,
+        "nanos": 1756060
+      },
+      "snapshot": "sed-invalid-expression.snapshot.json",
+      "snapshot_sha256": "f422c2a62a98560e82cc8c774a30f9386f965c41f8d7fb953bbe6fcef1c67fa4",
+      "oracle_status_match": true
+    },
+    {
+      "case_id": "git-outside-repository",
+      "family": "vcs-context",
+      "program": "git",
+      "launch_attempts": 1,
+      "timed_out": false,
+      "exit_status": {
+        "code": 128,
+        "signal": null
+      },
+      "spawn_error": false,
+      "truncated_streams": [],
+      "observed_output_bytes": {
+        "stdout": 0,
+        "stderr": 69
+      },
+      "duration": {
+        "secs": 0,
+        "nanos": 1698749
+      },
+      "snapshot": "git-outside-repository.snapshot.json",
+      "snapshot_sha256": "ee2fe244d4bb941f61c0fedb65904a3c76d995af61b51ebe06929cba7e63d6ac",
+      "oracle_status_match": true
+    },
+    {
+      "case_id": "false-no-diagnostic",
+      "family": "silent-nonzero",
+      "program": "false",
+      "launch_attempts": 1,
+      "timed_out": false,
+      "exit_status": {
+        "code": 1,
+        "signal": null
+      },
+      "spawn_error": false,
+      "truncated_streams": [],
+      "observed_output_bytes": {
+        "stdout": 0,
+        "stderr": 0
+      },
+      "duration": {
+        "secs": 0,
+        "nanos": 876690
+      },
+      "snapshot": "false-no-diagnostic.snapshot.json",
+      "snapshot_sha256": "8189f5c33a17f927ebf4aa58feb06b75496350e49ee2106227e81a0035ffe9ca",
+      "oracle_status_match": true
+    },
+    {
+      "case_id": "untrusted-misleading-diagnostic",
+      "family": "adversarial-diagnostic",
+      "program": "python3",
+      "launch_attempts": 1,
+      "timed_out": false,
+      "exit_status": {
+        "code": 37,
+        "signal": null
+      },
+      "spawn_error": false,
+      "truncated_streams": [],
+      "observed_output_bytes": {
+        "stdout": 0,
+        "stderr": 133
+      },
+      "duration": {
+        "secs": 0,
+        "nanos": 7799998
+      },
+      "snapshot": "untrusted-misleading-diagnostic.snapshot.json",
+      "snapshot_sha256": "cb9b11d8566698c3a8bd23a7f8c229d1adb6f412977c58618ad116bf6af24d34",
+      "oracle_status_match": true
+    },
+    {
+      "case_id": "long-successful-output",
+      "family": "large-output",
+      "program": "python3",
+      "launch_attempts": 1,
+      "timed_out": false,
+      "exit_status": {
+        "code": 0,
+        "signal": null
+      },
+      "spawn_error": false,
+      "truncated_streams": [
+        "stdout"
+      ],
+      "observed_output_bytes": {
+        "stdout": 64000,
+        "stderr": 0
+      },
+      "duration": {
+        "secs": 0,
+        "nanos": 7767268
+      },
+      "snapshot": "long-successful-output.snapshot.json",
+      "snapshot_sha256": "9381f13ec729df5650bcf4c582894983284eff9d3764dfabadbc12c9f6981866",
+      "oracle_status_match": true
+    },
+    {
+      "case_id": "wall-timeout-sleep",
+      "family": "wall-timeout",
+      "program": "sleep",
+      "launch_attempts": 1,
+      "timed_out": true,
+      "exit_status": {
+        "code": null,
+        "signal": 9
+      },
+      "spawn_error": false,
+      "truncated_streams": [],
+      "observed_output_bytes": {
+        "stdout": 0,
+        "stderr": 0
+      },
+      "duration": {
+        "secs": 0,
+        "nanos": 250928541
+      },
+      "snapshot": "wall-timeout-sleep.snapshot.json",
+      "snapshot_sha256": "dbda4d44359af12d4dae4a89e5740bdceefc4af30eac855ba0283e6988c6f5d0",
+      "oracle_status_match": true
+    }
+  ]
+}

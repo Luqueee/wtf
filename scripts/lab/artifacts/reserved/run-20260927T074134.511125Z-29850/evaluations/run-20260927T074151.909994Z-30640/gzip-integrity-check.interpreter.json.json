@@ -1,0 +1,93 @@
+{
+  "category": "unknown",
+  "command": "/usr/bin/gzip -t -- damaged.gz",
+  "detection": null,
+  "duration": {
+    "nanos": 4280458,
+    "secs": 0
+  },
+  "entities": {
+    "containers": [],
+    "paths": [],
+    "ports": [],
+    "processes": [
+      "gzip"
+    ],
+    "services": []
+  },
+  "evidence": [
+    "gzip: damaged.gz: invalid compressed data--format [REDACTED]"
+  ],
+  "exit_status": {
+    "code": 1,
+    "signal": null
+  },
+  "interpretation": {
+    "evidence_ids": [
+      "stderr"
+    ],
+    "missing": "compressed file format",
+    "next": "verify the integrity of the compressed file",
+    "possible": "gzip command failed due to invalid compressed data"
+  },
+  "investigation": null,
+  "normalized": {
+    "clean_stderr": "\ngzip: damaged.gz: invalid compressed data--format [REDACTED]\n\n",
+    "clean_stdout": "",
+    "collapsed_count": 0,
+    "relevant_lines": [
+      "gzip: damaged.gz: invalid compressed data--format [REDACTED]"
+    ]
+  },
+  "remedy": null,
+  "report": {
+    "capture": "captured",
+    "captured_at": 1790494894,
+    "checks": 0,
+    "claims": [
+      {
+        "kind": "observed",
+        "source": {
+          "field": "stderr",
+          "type": "execution"
+        },
+        "text": "gzip: damaged.gz: invalid compressed data--format [REDACTED]"
+      },
+      {
+        "kind": "possible",
+        "source": {
+          "evidence_ids": [
+            "stderr"
+          ],
+          "type": "model"
+        },
+        "text": "May be: gzip command failed due to invalid compressed data"
+      },
+      {
+        "kind": "missing",
+        "source": {
+          "evidence_ids": [
+            "stderr"
+          ],
+          "type": "model"
+        },
+        "text": "compressed file format"
+      },
+      {
+        "kind": "next",
+        "source": {
+          "type": "suggestion"
+        },
+        "text": "verify the integrity of the compressed file"
+      }
+    ],
+    "command_label": "gzip",
+    "outcome": "1",
+    "reported_at": 1790494916,
+    "source_mode": "explicit",
+    "summary": "Command failed: exit code 1."
+  },
+  "schema_version": 1,
+  "status": "Unknown",
+  "summary": "Command failed with exit code 1."
+}

@@ -1,0 +1,5 @@
+✗  gawk  1
+   RESULT    Command failed: exit code 1.
+   OBSERVED  gawk: cmd. line:1: BEGIN {
+   POSSIBLE  May be: unexpected newline or end of string
+   NEXT      verify gawk version and syntax correctness

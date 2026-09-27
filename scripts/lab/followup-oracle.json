@@ -1,0 +1,42 @@
+{
+  "schema_version": 1,
+  "suite": "followup",
+  "cases": {
+    "base64-invalid-alphabet": {
+      "established_truth": "The supplied encoded.txt contains punctuation outside the Base64 alphabet; decoding must reject its contents.",
+      "evidence_basis": "Fixture writes exact UTF-8 bytes not?base64! before invoking the decoder; no original command retry.",
+      "expected_exit_code": 1,
+      "expected_signal": null
+    },
+    "sort-invalid-separator": {
+      "established_truth": "The field-separator option supplies two characters where sort accepts one; input.txt is present.",
+      "evidence_basis": "Fixture controls the literal --field-separator=:: argv and writes input.txt before invocation.",
+      "expected_exit_code": 2,
+      "expected_signal": null
+    },
+    "diff-files-differ": {
+      "established_truth": "The two existing files have different contents; diff status 1 represents a difference, not a failure to read them.",
+      "evidence_basis": "Fixture writes distinct before.txt and after.txt bytes before the single invocation.",
+      "expected_exit_code": 1,
+      "expected_signal": null
+    },
+    "date-invalid-calendar": {
+      "established_truth": "The requested calendar value has month 13 and day 40; it is invalid regardless of local timezone.",
+      "evidence_basis": "Literal --date=2020-13-40 is supplied as argv; no clock or network oracle is needed.",
+      "expected_exit_code": 1,
+      "expected_signal": null
+    },
+    "head-invalid-count": {
+      "established_truth": "The requested byte count is nonnumeric; input.txt exists and is readable.",
+      "evidence_basis": "Fixture supplies --bytes=not-a-number and writes input.txt before invocation.",
+      "expected_exit_code": 1,
+      "expected_signal": null
+    },
+    "find-invalid-depth": {
+      "established_truth": "The requested maximum traversal depth is nonnumeric; the search root is the fixture directory.",
+      "evidence_basis": "Fixture controls -maxdepth not-a-number argv and creates an isolated cwd before invocation.",
+      "expected_exit_code": 1,
+      "expected_signal": null
+    }
+  }
+}

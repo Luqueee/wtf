@@ -1,0 +1,29 @@
+{
+  "execution": {
+    "command": "/usr/bin/find",
+    "args": [
+      ".",
+      "-maxdepth",
+      "not-a-number",
+      "-print"
+    ],
+    "cwd": "<LAB_TMP>",
+    "exit_status": {
+      "code": 1,
+      "signal": null
+    },
+    "stdout": "",
+    "stderr": "/usr/bin/find: Expected a positive decimal integer argument to -maxdepth, but got 'not-a-number'\n",
+    "duration": {
+      "secs": 0,
+      "nanos": 1588000
+    },
+    "timestamp": {
+      "secs_since_epoch": 1790501227,
+      "nanos_since_epoch": 748160893
+    },
+    "spawn_error": null
+  },
+  "capture_truncated": false,
+  "source_mode": "explicit"
+}

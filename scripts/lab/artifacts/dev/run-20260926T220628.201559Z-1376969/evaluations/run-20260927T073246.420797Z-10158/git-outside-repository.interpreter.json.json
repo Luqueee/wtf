@@ -1,0 +1,90 @@
+{
+  "category": "unknown",
+  "command": "/usr/bin/git status --short",
+  "detection": null,
+  "duration": {
+    "nanos": 1698749,
+    "secs": 0
+  },
+  "entities": {
+    "containers": [],
+    "paths": [],
+    "ports": [],
+    "processes": [
+      "git"
+    ],
+    "services": []
+  },
+  "evidence": [
+    "fatal: not a git repository (or any of the parent directories): .git"
+  ],
+  "exit_status": {
+    "code": 128,
+    "signal": null
+  },
+  "interpretation": {
+    "evidence_ids": [
+      "stderr"
+    ],
+    "missing": "Repository path or existence",
+    "next": "Check if the current directory is a Git repo or navigate to one",
+    "possible": "Not a Git repository"
+  },
+  "investigation": null,
+  "normalized": {
+    "clean_stderr": "fatal: not a git repository (or any of the parent directories): .git\n\n",
+    "clean_stdout": "",
+    "collapsed_count": 0,
+    "relevant_lines": [
+      "fatal: not a git repository (or any of the parent directories): .git"
+    ]
+  },
+  "remedy": null,
+  "report": {
+    "capture": "captured",
+    "captured_at": 1790460388,
+    "checks": 0,
+    "claims": [
+      {
+        "kind": "observed",
+        "source": {
+          "field": "stderr",
+          "type": "execution"
+        },
+        "text": "fatal: not a git repository (or any of the parent directories): .git"
+      },
+      {
+        "kind": "possible",
+        "source": {
+          "evidence_ids": [
+            "stderr"
+          ],
+          "type": "model"
+        },
+        "text": "May be: Not a Git repository"
+      },
+      {
+        "kind": "missing",
+        "source": {
+          "type": "suggestion"
+        },
+        "text": "Repository path or existence"
+      },
+      {
+        "kind": "next",
+        "source": {
+          "type": "suggestion"
+        },
+        "text": "Check if the current directory is a Git repo or navigate to one"
+      }
+    ],
+    "command_label": "git",
+    "outcome": "128",
+    "reported_at": 1790494376,
+    "source_mode": "explicit",
+    "summary": "Command failed: exit code 128."
+  },
+  "schema_version": 1,
+  "status": "Unknown",
+  "summary": "Command failed with exit code 128."
+}

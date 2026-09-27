@@ -1,0 +1,28 @@
+{
+  "execution": {
+    "command": "/usr/bin/diff",
+    "args": [
+      "--",
+      "before.txt",
+      "after.txt"
+    ],
+    "cwd": "<LAB_TMP>",
+    "exit_status": {
+      "code": 1,
+      "signal": null
+    },
+    "stdout": "1c1\n< first\n---\n> second\n",
+    "stderr": "",
+    "duration": {
+      "secs": 0,
+      "nanos": 1631080
+    },
+    "timestamp": {
+      "secs_since_epoch": 1790501227,
+      "nanos_since_epoch": 742679512
+    },
+    "spawn_error": null
+  },
+  "capture_truncated": false,
+  "source_mode": "explicit"
+}

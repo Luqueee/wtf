@@ -1,0 +1,6 @@
+✗  iconv  1
+   RESULT    Command failed: exit code 1.
+   OBSERVED  /usr/bin/iconv: conversion from `not-a-real-encoding' is not supported
+   POSSIBLE  May be: iconv command failed due to unsupported encoding
+   MISSING   valid encoding to convert
+   NEXT      verify available encodings with iconv --list

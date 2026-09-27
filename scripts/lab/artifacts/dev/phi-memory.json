@@ -1,0 +1,280 @@
+{
+  "model": "/home/devlabs/.cache/wtf-model-research/models/phi-4-mini/Phi-4-mini-instruct-Q4_K_M.gguf",
+  "runtime": "/home/devlabs/.cache/wtf-model-research/llama.cpp/build-cuda/bin/llama",
+  "snapshot": "scripts/lab/artifacts/dev/run-20260926T220628.201559Z-1376969/tar-malformed-archive.snapshot.json",
+  "baseline_other_process_mib": 13,
+  "context_limit_tokens": 2048,
+  "max_generation_tokens": 192,
+  "load_seconds": 1.0051117049999903,
+  "response_seconds": 2.0151808539999934,
+  "usage": {
+    "completion_tokens": 192,
+    "prompt_tokens": 192,
+    "total_tokens": 384,
+    "prompt_tokens_details": {
+      "cached_tokens": 0
+    }
+  },
+  "finish_reason": "length",
+  "peak_total_mib": 2853,
+  "peak_load_mib": 2847,
+  "peak_request_mib": 2853,
+  "method": "nvidia-smi memory.used polled approximately every 50 ms; total device usage includes other processes",
+  "samples": [
+    {
+      "seconds": 468.510797998,
+      "stage": "load",
+      "used_mib": 13
+    },
+    {
+      "seconds": 468.572122395,
+      "stage": "load",
+      "used_mib": 15
+    },
+    {
+      "seconds": 468.674922707,
+      "stage": "load",
+      "used_mib": 30
+    },
+    {
+      "seconds": 468.741861679,
+      "stage": "load",
+      "used_mib": 141
+    },
+    {
+      "seconds": 468.801714418,
+      "stage": "load",
+      "used_mib": 141
+    },
+    {
+      "seconds": 468.861968066,
+      "stage": "load",
+      "used_mib": 141
+    },
+    {
+      "seconds": 468.922156684,
+      "stage": "load",
+      "used_mib": 141
+    },
+    {
+      "seconds": 468.982224622,
+      "stage": "load",
+      "used_mib": 141
+    },
+    {
+      "seconds": 469.042012141,
+      "stage": "load",
+      "used_mib": 141
+    },
+    {
+      "seconds": 469.101953279,
+      "stage": "load",
+      "used_mib": 2511
+    },
+    {
+      "seconds": 469.162891607,
+      "stage": "load",
+      "used_mib": 2511
+    },
+    {
+      "seconds": 469.223561895,
+      "stage": "load",
+      "used_mib": 2511
+    },
+    {
+      "seconds": 469.283670444,
+      "stage": "load",
+      "used_mib": 2511
+    },
+    {
+      "seconds": 469.343739042,
+      "stage": "load",
+      "used_mib": 2511
+    },
+    {
+      "seconds": 469.40400536,
+      "stage": "load",
+      "used_mib": 2511
+    },
+    {
+      "seconds": 469.465064497,
+      "stage": "load",
+      "used_mib": 2847
+    },
+    {
+      "seconds": 469.526470185,
+      "stage": "prefill_and_generate",
+      "used_mib": 2849
+    },
+    {
+      "seconds": 469.586361383,
+      "stage": "prefill_and_generate",
+      "used_mib": 2853
+    },
+    {
+      "seconds": 469.64756357,
+      "stage": "prefill_and_generate",
+      "used_mib": 2853
+    },
+    {
+      "seconds": 469.708615967,
+      "stage": "prefill_and_generate",
+      "used_mib": 2853
+    },
+    {
+      "seconds": 469.770357914,
+      "stage": "prefill_and_generate",
+      "used_mib": 2853
+    },
+    {
+      "seconds": 469.83274736,
+      "stage": "prefill_and_generate",
+      "used_mib": 2853
+    },
+    {
+      "seconds": 469.894794006,
+      "stage": "prefill_and_generate",
+      "used_mib": 2853
+    },
+    {
+      "seconds": 469.956479993,
+      "stage": "prefill_and_generate",
+      "used_mib": 2853
+    },
+    {
+      "seconds": 470.01785978,
+      "stage": "prefill_and_generate",
+      "used_mib": 2853
+    },
+    {
+      "seconds": 470.079516277,
+      "stage": "prefill_and_generate",
+      "used_mib": 2853
+    },
+    {
+      "seconds": 470.141013704,
+      "stage": "prefill_and_generate",
+      "used_mib": 2853
+    },
+    {
+      "seconds": 470.20227842,
+      "stage": "prefill_and_generate",
+      "used_mib": 2853
+    },
+    {
+      "seconds": 470.263613587,
+      "stage": "prefill_and_generate",
+      "used_mib": 2853
+    },
+    {
+      "seconds": 470.325847814,
+      "stage": "prefill_and_generate",
+      "used_mib": 2853
+    },
+    {
+      "seconds": 470.38790454,
+      "stage": "prefill_and_generate",
+      "used_mib": 2853
+    },
+    {
+      "seconds": 470.450174706,
+      "stage": "prefill_and_generate",
+      "used_mib": 2853
+    },
+    {
+      "seconds": 470.511988843,
+      "stage": "prefill_and_generate",
+      "used_mib": 2853
+    },
+    {
+      "seconds": 470.574481328,
+      "stage": "prefill_and_generate",
+      "used_mib": 2853
+    },
+    {
+      "seconds": 470.636029425,
+      "stage": "prefill_and_generate",
+      "used_mib": 2853
+    },
+    {
+      "seconds": 470.697049792,
+      "stage": "prefill_and_generate",
+      "used_mib": 2853
+    },
+    {
+      "seconds": 470.759188398,
+      "stage": "prefill_and_generate",
+      "used_mib": 2853
+    },
+    {
+      "seconds": 470.821193684,
+      "stage": "prefill_and_generate",
+      "used_mib": 2853
+    },
+    {
+      "seconds": 470.88289847,
+      "stage": "prefill_and_generate",
+      "used_mib": 2853
+    },
+    {
+      "seconds": 470.945180256,
+      "stage": "prefill_and_generate",
+      "used_mib": 2853
+    },
+    {
+      "seconds": 471.007647112,
+      "stage": "prefill_and_generate",
+      "used_mib": 2853
+    },
+    {
+      "seconds": 471.069531918,
+      "stage": "prefill_and_generate",
+      "used_mib": 2853
+    },
+    {
+      "seconds": 471.131160234,
+      "stage": "prefill_and_generate",
+      "used_mib": 2853
+    },
+    {
+      "seconds": 471.19348975,
+      "stage": "prefill_and_generate",
+      "used_mib": 2853
+    },
+    {
+      "seconds": 471.255255587,
+      "stage": "prefill_and_generate",
+      "used_mib": 2853
+    },
+    {
+      "seconds": 471.317375033,
+      "stage": "prefill_and_generate",
+      "used_mib": 2853
+    },
+    {
+      "seconds": 471.379196739,
+      "stage": "prefill_and_generate",
+      "used_mib": 2853
+    },
+    {
+      "seconds": 471.441528535,
+      "stage": "prefill_and_generate",
+      "used_mib": 2853
+    },
+    {
+      "seconds": 471.503971541,
+      "stage": "prefill_and_generate",
+      "used_mib": 2853
+    },
+    {
+      "seconds": 471.565723427,
+      "stage": "loaded",
+      "used_mib": 159
+    },
+    {
+      "seconds": 471.625095105,
+      "stage": "loaded",
+      "used_mib": 13
+    }
+  ]
+}

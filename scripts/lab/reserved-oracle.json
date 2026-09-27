@@ -1,0 +1,56 @@
+{
+  "schema_version": 1,
+  "suite": "reserved",
+  "authority": "Pre-authored fixture and utility semantics; this oracle is separate from the execution manifest and must not enter prompts, reports, or training data.",
+  "cases": {
+    "curl-invalid-scheme": {
+      "expected_exit_code": 1,
+      "expected_signal": null,
+      "established_truth": "The URL has a deliberately unsupported scheme; curl should reject it during URL/protocol parsing before any network request.",
+      "evidence_basis": "Literal argv in the frozen manifest.",
+      "not_established": "No DNS, connectivity, server, or remote-service condition."
+    },
+    "gzip-integrity-check": {
+      "expected_exit_code": 1,
+      "expected_signal": null,
+      "established_truth": "The fixed byte sequence is not a complete valid gzip stream, and gzip is invoked in test-only mode.",
+      "evidence_basis": "Manifest fixture bytes and gzip -t argv.",
+      "not_established": "No corruption claim about files other than this local fixture."
+    },
+    "sha256sum-missing-input": {
+      "expected_exit_code": 1,
+      "expected_signal": null,
+      "established_truth": "The named input is absent from the fresh case directory; no digest is produced for it.",
+      "evidence_basis": "Fresh case directory and manifest argv.",
+      "not_established": "No checksum mismatch or data-integrity claim."
+    },
+    "jq-malformed-json": {
+      "expected_exit_code": 4,
+      "expected_signal": null,
+      "established_truth": "The local fixture is syntactically invalid JSON because the field value is missing.",
+      "evidence_basis": "Literal fixture contents created before launch.",
+      "not_established": "No claim about other JSON documents or application behavior."
+    },
+    "iconv-unknown-charset": {
+      "expected_exit_code": 1,
+      "expected_signal": null,
+      "established_truth": "The requested source encoding name is intentionally nonexistent; the text file itself is ordinary UTF-8-compatible text.",
+      "evidence_basis": "Literal argv and local fixture contents.",
+      "not_established": "No claim about a user's file encoding."
+    },
+    "env-missing-program": {
+      "expected_exit_code": 127,
+      "expected_signal": null,
+      "established_truth": "env receives an isolated PATH containing only a nonexistent directory and is asked to start a deliberately absent command.",
+      "evidence_basis": "Literal argv; no shell or system PATH lookup is involved for the child name.",
+      "not_established": "No claim about the parent process's PATH."
+    },
+    "awk-invalid-program": {
+      "expected_exit_code": 2,
+      "expected_signal": null,
+      "established_truth": "The awk program has an opening block with no closing brace, so it is syntactically incomplete.",
+      "evidence_basis": "Literal argv in the frozen manifest.",
+      "not_established": "No claim about input data or runtime behavior."
+    }
+  }
+}

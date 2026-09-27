@@ -1,0 +1,5 @@
+✗  date  1
+   RESULT    Command failed: exit code 1.
+   OBSERVED  date: invalid date '2020-13-40'
+   POSSIBLE  May be: The command failed because the date format provided ('2020-13-40') is invalid.
+   NEXT      Check the correct format for the 'date' command in the system's documentation.

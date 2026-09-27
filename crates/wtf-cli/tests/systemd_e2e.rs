@@ -37,7 +37,7 @@ impl Fixture {
         fs::create_dir(home.join(".config")).expect("create private XDG config directory");
         fs::write(&calls, "").expect("create fake command call log");
         for tool in [
-            "curl", "wget", "nc", "ncat", "ping", "docker", "podman", "getent", "ip", "ss",
+            "curl", "wget", "nc", "ncat", "ping", "docker", "podman", "getent", "ip", "ss", "df",
         ] {
             write_executable(&bin.join(tool), BLOCKED_EXTERNAL_SHIM);
         }
@@ -552,17 +552,23 @@ fn stderr_alone_does_not_confirm_when_journal_is_inconclusive_or_unavailable() {
                         "ok"
                     },
                 ),
+                ("Filesystem", "exit 97"),
+                ("FilesystemInodes", "exit 97"),
             ],
         );
         let calls = fixture.calls();
-        assert_eq!(calls.len(), 3, "{calls:?}");
+        assert_eq!(calls.len(), 5, "{calls:?}");
         assert_eq!(calls[0], ["systemctl", "start", "api"], "{calls:?}");
         assert_eq!(
             calls[2].first().map(String::as_str),
             Some("journalctl"),
             "{calls:?}"
         );
-        assert_no_unexpected_commands(&calls);
+        assert_eq!(calls[3], ["df", "-P", "--", fixture.work.to_str().unwrap()]);
+        assert_eq!(
+            calls[4],
+            ["df", "-Pi", "--", fixture.work.to_str().unwrap()]
+        );
     }
 }
 

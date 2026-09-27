@@ -1,0 +1,97 @@
+{
+  "category": "unknown",
+  "command": "/usr/bin/iconv --from-code=not-a-real-encoding --to-code=UTF-8 input.txt",
+  "detection": null,
+  "duration": {
+    "nanos": 2035648,
+    "secs": 0
+  },
+  "entities": {
+    "containers": [],
+    "paths": [
+      "/usr/bin/iconv"
+    ],
+    "ports": [],
+    "processes": [
+      "iconv"
+    ],
+    "services": []
+  },
+  "evidence": [
+    "/usr/bin/iconv: conversion from `not-a-real-encoding' is not supported",
+    "Try `iconv --help' or `iconv --usage' for more information."
+  ],
+  "exit_status": {
+    "code": 1,
+    "signal": null
+  },
+  "interpretation": {
+    "evidence_ids": [
+      "stderr"
+    ],
+    "missing": "valid encoding to convert",
+    "next": "verify available encodings with iconv --list",
+    "possible": "iconv command failed due to unsupported encoding"
+  },
+  "investigation": null,
+  "normalized": {
+    "clean_stderr": "/usr/bin/iconv: conversion from `not-a-real-encoding' is not supported\nTry `iconv --help' or `iconv --usage' for more information.\n\n",
+    "clean_stdout": "",
+    "collapsed_count": 0,
+    "relevant_lines": [
+      "/usr/bin/iconv: conversion from `not-a-real-encoding' is not supported",
+      "Try `iconv --help' or `iconv --usage' for more information."
+    ]
+  },
+  "remedy": null,
+  "report": {
+    "capture": "captured",
+    "captured_at": 1790494894,
+    "checks": 0,
+    "claims": [
+      {
+        "kind": "observed",
+        "source": {
+          "field": "stderr",
+          "type": "execution"
+        },
+        "text": "/usr/bin/iconv: conversion from `not-a-real-encoding' is not supported"
+      },
+      {
+        "kind": "possible",
+        "source": {
+          "evidence_ids": [
+            "stderr"
+          ],
+          "type": "model"
+        },
+        "text": "May be: iconv command failed due to unsupported encoding"
+      },
+      {
+        "kind": "missing",
+        "source": {
+          "evidence_ids": [
+            "stderr"
+          ],
+          "type": "model"
+        },
+        "text": "valid encoding to convert"
+      },
+      {
+        "kind": "next",
+        "source": {
+          "type": "suggestion"
+        },
+        "text": "verify available encodings with iconv --list"
+      }
+    ],
+    "command_label": "iconv",
+    "outcome": "1",
+    "reported_at": 1790494926,
+    "source_mode": "explicit",
+    "summary": "Command failed: exit code 1."
+  },
+  "schema_version": 1,
+  "status": "Unknown",
+  "summary": "Command failed with exit code 1."
+}

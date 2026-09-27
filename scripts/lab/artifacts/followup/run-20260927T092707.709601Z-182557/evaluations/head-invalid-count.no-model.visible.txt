@@ -1,0 +1,3 @@
+✗  head  1
+   RESULT    Command failed: exit code 1.
+   OBSERVED  head: invalid number of bytes: 'not-a-number'

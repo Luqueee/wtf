@@ -25,6 +25,7 @@ pub enum CaptureState {
 #[derive(Serialize)]
 #[serde(rename_all = "snake_case")]
 pub enum ClaimKind {
+    Possible,
     Observed,
     Missing,
     Next,
@@ -45,6 +46,9 @@ pub enum ClaimSource {
         field: &'static str,
     },
     Suggestion,
+    Model {
+        evidence_ids: Vec<String>,
+    },
 }
 
 #[derive(Serialize)]
@@ -215,6 +219,10 @@ fn redact_sensitive_header(line: &str) -> (String, bool) {
     (line.to_owned(), false)
 }
 
+pub fn sanitize_text(text: &str) -> String {
+    visible_lines(text, 240)
+}
+
 fn captured_line<'a>(
     execution: &'a CommandExecution,
     diagnosis: &'a Diagnosis,
@@ -300,6 +308,31 @@ impl Report {
         };
         let mut claims = Vec::with_capacity(3);
         if diagnosis.status != DiagnosisStatus::Success {
+            // Original output is the only historical observation. A probe describes
+            // current state, so do not let specialized reconstruction hide it.
+            if let Some(error) = execution.spawn_error.as_deref() {
+                let text = visible(error, 170);
+                if !text.is_empty() {
+                    claims.push(Claim {
+                        kind: ClaimKind::Observed,
+                        text,
+                        source: ClaimSource::Execution {
+                            field: "spawn_error",
+                        },
+                    });
+                }
+            } else if !shell {
+                if let Some((line, field)) = captured_line(execution, diagnosis) {
+                    let text = visible(line, 170);
+                    if !text.is_empty() {
+                        claims.push(Claim {
+                            kind: ClaimKind::Observed,
+                            text,
+                            source: ClaimSource::Execution { field },
+                        });
+                    }
+                }
+            }
             if let Some(inv) = investigation {
                 if let Some(evidence) = inv.evidence.first() {
                     if let Some(attempt) = inv
@@ -321,31 +354,6 @@ impl Report {
                                         .unwrap_or_default()
                                         .as_secs(),
                                 },
-                            });
-                        }
-                    }
-                }
-            }
-            if claims.is_empty() {
-                if let Some(error) = execution.spawn_error.as_deref() {
-                    let text = visible(error, 170);
-                    if !text.is_empty() {
-                        claims.push(Claim {
-                            kind: ClaimKind::Observed,
-                            text,
-                            source: ClaimSource::Execution {
-                                field: "spawn_error",
-                            },
-                        });
-                    }
-                } else if !shell {
-                    if let Some((line, field)) = captured_line(execution, diagnosis) {
-                        let text = visible(line, 170);
-                        if !text.is_empty() {
-                            claims.push(Claim {
-                                kind: ClaimKind::Observed,
-                                text,
-                                source: ClaimSource::Execution { field },
                             });
                         }
                     }
@@ -411,6 +419,45 @@ impl Report {
         }
     }
 
+    pub fn add_interpretation(&mut self, interpretation: &crate::interpreter::Interpretation) {
+        if interpretation.possible.is_empty() {
+            return;
+        }
+        let possible = Claim {
+            kind: ClaimKind::Possible,
+            text: format!("May be: {}", visible(&interpretation.possible, 170)),
+            source: ClaimSource::Model {
+                evidence_ids: interpretation.evidence_ids.clone(),
+            },
+        };
+        let index = self
+            .claims
+            .iter()
+            .position(|claim| matches!(claim.kind, ClaimKind::Missing | ClaimKind::Next))
+            .unwrap_or(self.claims.len());
+        self.claims.insert(index, possible);
+        if !interpretation.missing.is_empty() {
+            self.claims
+                .retain(|claim| !matches!(claim.kind, ClaimKind::Missing));
+            self.claims.push(Claim {
+                kind: ClaimKind::Missing,
+                text: visible(&interpretation.missing, 170),
+                source: ClaimSource::Model {
+                    evidence_ids: interpretation.evidence_ids.clone(),
+                },
+            });
+        }
+        if !interpretation.next.is_empty() {
+            self.claims
+                .retain(|claim| !matches!(claim.kind, ClaimKind::Next));
+            self.claims.push(Claim {
+                kind: ClaimKind::Next,
+                text: visible(&interpretation.next, 170),
+                source: ClaimSource::Suggestion,
+            });
+        }
+    }
+
     pub fn render(
         &self,
         color: bool,
@@ -443,6 +490,7 @@ impl Report {
                 ClaimKind::Observed => ("OBSERVED", if color { "\x1b[1;96m" } else { "" }),
                 ClaimKind::Missing => ("MISSING", if color { "\x1b[1;93m" } else { "" }),
                 ClaimKind::Next => ("NEXT", if color { "\x1b[1;95m" } else { "" }),
+                ClaimKind::Possible => ("POSSIBLE", if color { "\x1b[1;94m" } else { "" }),
             };
             let _ = writeln!(out, "   {shade}{label:<8}{reset}  {}", claim.text);
         }
@@ -479,6 +527,7 @@ impl Report {
                 )),
                 ClaimSource::Metadata { field } => out.push_str(&format!("   evidence: {field}\n")),
                 ClaimSource::Suggestion => out.push_str("   next step: suggestion, not executed\n"),
+                ClaimSource::Model { evidence_ids } => out.push_str(&format!("   interpretation: tentative; cited evidence {}; execution at {} (Unix seconds); probes at their listed inspection times\n", evidence_ids.join(", "), self.captured_at)),
             }
         }
         if let Some(inv) = investigation {

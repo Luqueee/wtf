@@ -1,0 +1,25 @@
+{
+  "frozen_before_reserved_execution": true,
+  "evaluation_type": "within-project-family-reserved",
+  "default_behavior": "no-model",
+  "selected_experimental_model": "bartowski/microsoft_Phi-4-mini-instruct-GGUF Q4_K_M",
+  "model_sha256": "01999f17c39cc3074afae5e9c539bc82d45f2dd7faa3917c66cbef76fce8c0c2",
+  "runtime": "llama.cpp 0.5.0-dev commit 9588757 CUDA, unified llama serve",
+  "runtime_sha256": "88adb7ef4d10b1b60f59db5e0f232fce3a13d6ce595506eb731b1ee78f50e5af",
+  "cli_binary_sha256": "b1c7beab714bb029ea37be7daf875dafe81010e3f60a2506605376893cecc0b2",
+  "prompt_version": "generic-evidence-1",
+  "model_config": {"context_tokens": 2048, "max_completion_tokens": 192, "temperature": 0, "deadline_seconds": 30, "endpoint": "private-unix-socket:/v1/chat/completions", "tools": "disabled"},
+  "source_sha256": {
+    "crates/wtf-cli/src/interpreter.rs": "9ea0c40ca78e23719bc2dd061037879ff4569029a17d7259bf6ebbbba2d86204",
+    "crates/wtf-cli/src/main.rs": "ee688727661964d9eb445ba6329356e5ccea7c5a54764e2af8abea13ab492b61",
+    "crates/wtf-cli/src/report.rs": "ee485dfaebca9e3d85e7cd9d1cfb653c29017a0e4d7e1da5b67540c97845d7e3",
+    "crates/wtf-cli/Cargo.toml": "9bf289efc5cd4e6516360b58d7dbb64184951600d705a8755cc09ae771c495bb",
+    "scripts/lab/run.py": "4c31f3c5896378811f5b4cc0b450740d726c074bd934c5c09f3031cc6b3222b9",
+    "scripts/lab/evaluate.py": "a7fe088717e15d3301be460aab4a6c418cf86a75f765ff03fbb8bd810c0e2b2e",
+    "docs/generic-evaluation.md": "b7dad665692b6fed535e3ac884c83b06f137eec88489bd6e5e011a62fd4577e2"
+  },
+  "reserved_manifest_sha256": "4a2d91d3c2497e3585998842c49d1534bf6efb61cac258aa53c153e6192c5c2c",
+  "reserved_oracle_sha256": "73a8a81c1ce5757fdd012288b64a2a7ad0a19fb8cb689cdd4e118ecb4c2493cc",
+  "selection_basis": "On nine development snapshots (five informative failures), Phi produced five format-valid suggestions but zero new supported contributions and one misleading permission explanation. Qwen likewise zero new and one misleading explanation; Granite invalid evidence IDs on all five. Phi chosen only as opt-in exploratory reserved comparator, not product default.",
+  "scoring_criteria": "docs/generic-evaluation.md"
+}

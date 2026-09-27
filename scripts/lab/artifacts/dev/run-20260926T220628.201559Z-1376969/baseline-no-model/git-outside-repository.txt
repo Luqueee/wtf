@@ -1,0 +1,3 @@
+✗  git  128
+   RESULT    Command failed: exit code 128.
+   OBSERVED  fatal: not a git repository (or any of the parent directories): .git

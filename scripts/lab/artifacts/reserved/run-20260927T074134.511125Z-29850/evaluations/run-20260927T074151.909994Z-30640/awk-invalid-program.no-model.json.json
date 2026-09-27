@@ -1,0 +1,60 @@
+{
+  "category": "unknown",
+  "command": "/usr/bin/gawk BEGIN {",
+  "detection": null,
+  "duration": {
+    "nanos": 1705209,
+    "secs": 0
+  },
+  "entities": {
+    "containers": [],
+    "paths": [],
+    "ports": [],
+    "processes": [
+      "gawk"
+    ],
+    "services": []
+  },
+  "evidence": [
+    "gawk: cmd. line:1: BEGIN {",
+    "gawk: cmd. line:1:        ^ unexpected newline or end of string"
+  ],
+  "exit_status": {
+    "code": 1,
+    "signal": null
+  },
+  "investigation": null,
+  "normalized": {
+    "clean_stderr": "gawk: cmd. line:1: BEGIN {\ngawk: cmd. line:1:        ^ unexpected newline or end of string\n\n",
+    "clean_stdout": "",
+    "collapsed_count": 0,
+    "relevant_lines": [
+      "gawk: cmd. line:1: BEGIN {",
+      "gawk: cmd. line:1:        ^ unexpected newline or end of string"
+    ]
+  },
+  "remedy": null,
+  "report": {
+    "capture": "captured",
+    "captured_at": 1790494894,
+    "checks": 0,
+    "claims": [
+      {
+        "kind": "observed",
+        "source": {
+          "field": "stderr",
+          "type": "execution"
+        },
+        "text": "gawk: cmd. line:1: BEGIN {"
+      }
+    ],
+    "command_label": "gawk",
+    "outcome": "1",
+    "reported_at": 1790494931,
+    "source_mode": "explicit",
+    "summary": "Command failed: exit code 1."
+  },
+  "schema_version": 1,
+  "status": "Unknown",
+  "summary": "Command failed with exit code 1."
+}

@@ -1,0 +1,27 @@
+{
+  "execution": {
+    "command": "/usr/bin/base64",
+    "args": [
+      "--decode",
+      "encoded.txt"
+    ],
+    "cwd": "<LAB_TMP>",
+    "exit_status": {
+      "code": 1,
+      "signal": null
+    },
+    "stdout": "��",
+    "stderr": "base64: invalid input\n",
+    "duration": {
+      "secs": 0,
+      "nanos": 30188845
+    },
+    "timestamp": {
+      "secs_since_epoch": 1790501227,
+      "nanos_since_epoch": 709862296
+    },
+    "spawn_error": null
+  },
+  "capture_truncated": false,
+  "source_mode": "explicit"
+}

@@ -1,0 +1,28 @@
+{
+  "execution": {
+    "command": "/usr/bin/jq",
+    "args": [
+      "-e",
+      ".",
+      "malformed.json"
+    ],
+    "cwd": "<LAB_TMP>",
+    "exit_status": {
+      "code": 5,
+      "signal": null
+    },
+    "stdout": "",
+    "stderr": "jq: parse error: Unmatched '}' at line 1, column 11\n",
+    "duration": {
+      "secs": 0,
+      "nanos": 3960368
+    },
+    "timestamp": {
+      "secs_since_epoch": 1790494894,
+      "nanos_since_epoch": 522817804
+    },
+    "spawn_error": null
+  },
+  "capture_truncated": false,
+  "source_mode": "explicit"
+}

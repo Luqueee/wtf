@@ -1,0 +1,3 @@
+✗  find  1
+   RESULT    Command failed: exit code 1.
+   OBSERVED  /usr/bin/find: Expected a positive decimal integer argument to -maxdepth, but got 'not-a-number'

@@ -320,6 +320,74 @@ fn assert_no_recent_failure(output: &Output) {
 }
 
 #[test]
+fn installed_opt_in_live_wrapper_runs_once_without_recording_duplicate_failure() {
+    for shell in available_shells() {
+        let isolated = IsolatedShell::new(shell);
+        isolated.install();
+        let output = isolated.run(
+            "wtfr sh -c 'printf x >> launched; printf \"live-tag\\\\n\"; exit 23'\ntrue\nexit 0\n",
+        );
+        assert_eq!(
+            fs::read(isolated.home.join("launched")).unwrap_or_else(|error| {
+                panic!(
+                    "{} did not run wtfr: {error}; stdout={} stderr={}",
+                    shell.name(),
+                    String::from_utf8_lossy(&output.stdout),
+                    String::from_utf8_lossy(&output.stderr)
+                )
+            }),
+            b"x",
+            "{} invoked the command more than once",
+            shell.name()
+        );
+        let visible = String::from_utf8_lossy(&output.stdout);
+        assert!(visible.contains("live-tag"), "{}: {visible}", shell.name());
+        assert!(visible.contains("sh  23"), "{}: {visible}", shell.name());
+        assert_no_recent_failure(&isolated.run_wtf(&[], None));
+    }
+}
+
+#[test]
+fn fish_preserves_direct_live_exit_status_at_the_next_prompt() {
+    if fish_executable().is_none() || script_executable().is_none() {
+        return;
+    }
+    for installed in [false, true] {
+        let isolated = IsolatedShell::new(Shell::Fish);
+        if installed {
+            isolated.install();
+        }
+        let wrapper_check = if installed {
+            "wtfr sh -c 'exit 29'\nprintf 'wrapper-status=%s\\n' $status > wrapper-status.txt\n"
+        } else {
+            ""
+        };
+        let script = format!(
+            "wtf --no-color --live -- sh -c 'exit 23'\nprintf 'shell-status=%s\\n' $status > status.txt\n{wrapper_check}exit 0\n"
+        );
+        let output = isolated.run(&script);
+        let status = fs::read_to_string(isolated.home.join("status.txt")).unwrap_or_else(|error| {
+            panic!(
+                "fish status file missing: {error}; {}",
+                String::from_utf8_lossy(&output.stdout)
+            )
+        });
+        assert_eq!(
+            status,
+            "shell-status=23\n",
+            "installed={installed}; {}",
+            String::from_utf8_lossy(&output.stdout)
+        );
+        if installed {
+            assert_eq!(
+                fs::read_to_string(isolated.home.join("wrapper-status.txt")).unwrap(),
+                "wrapper-status=29\n"
+            );
+        }
+    }
+}
+
+#[test]
 fn cli_reports_missing_invalid_and_expired_shell_failure_records() {
     let isolated = IsolatedShell::new(Shell::Bash);
     assert_no_recent_failure(&isolated.run_wtf(&[], None));

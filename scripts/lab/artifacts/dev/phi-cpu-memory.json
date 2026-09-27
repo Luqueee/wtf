@@ -1,0 +1,765 @@
+{
+  "model": "/home/devlabs/.cache/wtf-model-research/models/phi-4-mini/Phi-4-mini-instruct-Q4_K_M.gguf",
+  "runtime": "/home/devlabs/.cache/wtf-model-research/llama.cpp/build-cuda/bin/llama",
+  "snapshot": "scripts/lab/artifacts/dev/run-20260926T220628.201559Z-1376969/tar-malformed-archive.snapshot.json",
+  "baseline_other_process_mib": 13,
+  "context_limit_tokens": 2048,
+  "max_generation_tokens": 192,
+  "load_seconds": 0.7040042109999831,
+  "response_seconds": 9.321062036000058,
+  "usage": {
+    "completion_tokens": 192,
+    "prompt_tokens": 192,
+    "total_tokens": 384,
+    "prompt_tokens_details": {
+      "cached_tokens": 0
+    }
+  },
+  "finish_reason": "length",
+  "peak_total_mib": 15,
+  "peak_load_mib": 15,
+  "peak_request_mib": 15,
+  "method": "nvidia-smi memory.used polled approximately every 50 ms; total device usage includes other processes",
+  "samples": [
+    {
+      "seconds": 1065.223748346,
+      "stage": "load",
+      "used_mib": 13
+    },
+    {
+      "seconds": 1065.284376642,
+      "stage": "load",
+      "used_mib": 15
+    },
+    {
+      "seconds": 1065.381129122,
+      "stage": "load",
+      "used_mib": 15
+    },
+    {
+      "seconds": 1065.441755298,
+      "stage": "load",
+      "used_mib": 15
+    },
+    {
+      "seconds": 1065.501944694,
+      "stage": "load",
+      "used_mib": 15
+    },
+    {
+      "seconds": 1065.56263053,
+      "stage": "load",
+      "used_mib": 15
+    },
+    {
+      "seconds": 1065.623421056,
+      "stage": "load",
+      "used_mib": 15
+    },
+    {
+      "seconds": 1065.683557162,
+      "stage": "load",
+      "used_mib": 15
+    },
+    {
+      "seconds": 1065.744099119,
+      "stage": "load",
+      "used_mib": 15
+    },
+    {
+      "seconds": 1065.805941355,
+      "stage": "load",
+      "used_mib": 15
+    },
+    {
+      "seconds": 1065.867961481,
+      "stage": "load",
+      "used_mib": 15
+    },
+    {
+      "seconds": 1065.935985678,
+      "stage": "prefill_and_generate",
+      "used_mib": 15
+    },
+    {
+      "seconds": 1065.998881644,
+      "stage": "prefill_and_generate",
+      "used_mib": 15
+    },
+    {
+      "seconds": 1066.06149657,
+      "stage": "prefill_and_generate",
+      "used_mib": 15
+    },
+    {
+      "seconds": 1066.123320476,
+      "stage": "prefill_and_generate",
+      "used_mib": 15
+    },
+    {
+      "seconds": 1066.185219792,
+      "stage": "prefill_and_generate",
+      "used_mib": 15
+    },
+    {
+      "seconds": 1066.247540219,
+      "stage": "prefill_and_generate",
+      "used_mib": 15
+    },
+    {
+      "seconds": 1066.309806045,
+      "stage": "prefill_and_generate",
+      "used_mib": 15
+    },
+    {
+      "seconds": 1066.372143011,
+      "stage": "prefill_and_generate",
+      "used_mib": 15
+    },
+    {
+      "seconds": 1066.434591567,
+      "stage": "prefill_and_generate",
+      "used_mib": 15
+    },
+    {
+      "seconds": 1066.497053403,
+      "stage": "prefill_and_generate",
+      "used_mib": 15
+    },
+    {
+      "seconds": 1066.56597347,
+      "stage": "prefill_and_generate",
+      "used_mib": 15
+    },
+    {
+      "seconds": 1066.638035218,
+      "stage": "prefill_and_generate",
+      "used_mib": 15
+    },
+    {
+      "seconds": 1066.708426144,
+      "stage": "prefill_and_generate",
+      "used_mib": 15
+    },
+    {
+      "seconds": 1066.778931851,
+      "stage": "prefill_and_generate",
+      "used_mib": 15
+    },
+    {
+      "seconds": 1066.849565268,
+      "stage": "prefill_and_generate",
+      "used_mib": 15
+    },
+    {
+      "seconds": 1066.919429704,
+      "stage": "prefill_and_generate",
+      "used_mib": 15
+    },
+    {
+      "seconds": 1066.989931341,
+      "stage": "prefill_and_generate",
+      "used_mib": 15
+    },
+    {
+      "seconds": 1067.060744418,
+      "stage": "prefill_and_generate",
+      "used_mib": 15
+    },
+    {
+      "seconds": 1067.131119914,
+      "stage": "prefill_and_generate",
+      "used_mib": 15
+    },
+    {
+      "seconds": 1067.201269801,
+      "stage": "prefill_and_generate",
+      "used_mib": 15
+    },
+    {
+      "seconds": 1067.272026438,
+      "stage": "prefill_and_generate",
+      "used_mib": 15
+    },
+    {
+      "seconds": 1067.341573505,
+      "stage": "prefill_and_generate",
+      "used_mib": 15
+    },
+    {
+      "seconds": 1067.411905652,
+      "stage": "prefill_and_generate",
+      "used_mib": 15
+    },
+    {
+      "seconds": 1067.480176018,
+      "stage": "prefill_and_generate",
+      "used_mib": 15
+    },
+    {
+      "seconds": 1067.549610375,
+      "stage": "prefill_and_generate",
+      "used_mib": 15
+    },
+    {
+      "seconds": 1067.618985981,
+      "stage": "prefill_and_generate",
+      "used_mib": 15
+    },
+    {
+      "seconds": 1067.689254688,
+      "stage": "prefill_and_generate",
+      "used_mib": 15
+    },
+    {
+      "seconds": 1067.760532054,
+      "stage": "prefill_and_generate",
+      "used_mib": 15
+    },
+    {
+      "seconds": 1067.831529231,
+      "stage": "prefill_and_generate",
+      "used_mib": 15
+    },
+    {
+      "seconds": 1067.901318998,
+      "stage": "prefill_and_generate",
+      "used_mib": 15
+    },
+    {
+      "seconds": 1067.971359224,
+      "stage": "prefill_and_generate",
+      "used_mib": 15
+    },
+    {
+      "seconds": 1068.04173278,
+      "stage": "prefill_and_generate",
+      "used_mib": 15
+    },
+    {
+      "seconds": 1068.112300227,
+      "stage": "prefill_and_generate",
+      "used_mib": 15
+    },
+    {
+      "seconds": 1068.182579174,
+      "stage": "prefill_and_generate",
+      "used_mib": 15
+    },
+    {
+      "seconds": 1068.25286031,
+      "stage": "prefill_and_generate",
+      "used_mib": 15
+    },
+    {
+      "seconds": 1068.323297407,
+      "stage": "prefill_and_generate",
+      "used_mib": 15
+    },
+    {
+      "seconds": 1068.392255043,
+      "stage": "prefill_and_generate",
+      "used_mib": 15
+    },
+    {
+      "seconds": 1068.46206314,
+      "stage": "prefill_and_generate",
+      "used_mib": 15
+    },
+    {
+      "seconds": 1068.531034546,
+      "stage": "prefill_and_generate",
+      "used_mib": 15
+    },
+    {
+      "seconds": 1068.601536062,
+      "stage": "prefill_and_generate",
+      "used_mib": 15
+    },
+    {
+      "seconds": 1068.671295818,
+      "stage": "prefill_and_generate",
+      "used_mib": 15
+    },
+    {
+      "seconds": 1068.741532115,
+      "stage": "prefill_and_generate",
+      "used_mib": 15
+    },
+    {
+      "seconds": 1068.811201201,
+      "stage": "prefill_and_generate",
+      "used_mib": 15
+    },
+    {
+      "seconds": 1068.881719397,
+      "stage": "prefill_and_generate",
+      "used_mib": 15
+    },
+    {
+      "seconds": 1068.951830244,
+      "stage": "prefill_and_generate",
+      "used_mib": 15
+    },
+    {
+      "seconds": 1069.02244651,
+      "stage": "prefill_and_generate",
+      "used_mib": 15
+    },
+    {
+      "seconds": 1069.092295706,
+      "stage": "prefill_and_generate",
+      "used_mib": 15
+    },
+    {
+      "seconds": 1069.162104902,
+      "stage": "prefill_and_generate",
+      "used_mib": 15
+    },
+    {
+      "seconds": 1069.232704649,
+      "stage": "prefill_and_generate",
+      "used_mib": 15
+    },
+    {
+      "seconds": 1069.301884405,
+      "stage": "prefill_and_generate",
+      "used_mib": 15
+    },
+    {
+      "seconds": 1069.372593061,
+      "stage": "prefill_and_generate",
+      "used_mib": 15
+    },
+    {
+      "seconds": 1069.442126007,
+      "stage": "prefill_and_generate",
+      "used_mib": 15
+    },
+    {
+      "seconds": 1069.511876984,
+      "stage": "prefill_and_generate",
+      "used_mib": 15
+    },
+    {
+      "seconds": 1069.58120653,
+      "stage": "prefill_and_generate",
+      "used_mib": 15
+    },
+    {
+      "seconds": 1069.649502995,
+      "stage": "prefill_and_generate",
+      "used_mib": 15
+    },
+    {
+      "seconds": 1069.719259142,
+      "stage": "prefill_and_generate",
+      "used_mib": 15
+    },
+    {
+      "seconds": 1069.789026888,
+      "stage": "prefill_and_generate",
+      "used_mib": 15
+    },
+    {
+      "seconds": 1069.858348494,
+      "stage": "prefill_and_generate",
+      "used_mib": 15
+    },
+    {
+      "seconds": 1069.928409269,
+      "stage": "prefill_and_generate",
+      "used_mib": 15
+    },
+    {
+      "seconds": 1069.998104656,
+      "stage": "prefill_and_generate",
+      "used_mib": 15
+    },
+    {
+      "seconds": 1070.068386471,
+      "stage": "prefill_and_generate",
+      "used_mib": 15
+    },
+    {
+      "seconds": 1070.137713118,
+      "stage": "prefill_and_generate",
+      "used_mib": 15
+    },
+    {
+      "seconds": 1070.207704224,
+      "stage": "prefill_and_generate",
+      "used_mib": 15
+    },
+    {
+      "seconds": 1070.276935969,
+      "stage": "prefill_and_generate",
+      "used_mib": 15
+    },
+    {
+      "seconds": 1070.345374666,
+      "stage": "prefill_and_generate",
+      "used_mib": 15
+    },
+    {
+      "seconds": 1070.413963481,
+      "stage": "prefill_and_generate",
+      "used_mib": 15
+    },
+    {
+      "seconds": 1070.482536457,
+      "stage": "prefill_and_generate",
+      "used_mib": 15
+    },
+    {
+      "seconds": 1070.551672963,
+      "stage": "prefill_and_generate",
+      "used_mib": 15
+    },
+    {
+      "seconds": 1070.620443659,
+      "stage": "prefill_and_generate",
+      "used_mib": 15
+    },
+    {
+      "seconds": 1070.686902894,
+      "stage": "prefill_and_generate",
+      "used_mib": 15
+    },
+    {
+      "seconds": 1070.75461648,
+      "stage": "prefill_and_generate",
+      "used_mib": 15
+    },
+    {
+      "seconds": 1070.824214846,
+      "stage": "prefill_and_generate",
+      "used_mib": 15
+    },
+    {
+      "seconds": 1070.892755212,
+      "stage": "prefill_and_generate",
+      "used_mib": 15
+    },
+    {
+      "seconds": 1070.962195727,
+      "stage": "prefill_and_generate",
+      "used_mib": 15
+    },
+    {
+      "seconds": 1071.031153513,
+      "stage": "prefill_and_generate",
+      "used_mib": 15
+    },
+    {
+      "seconds": 1071.100278209,
+      "stage": "prefill_and_generate",
+      "used_mib": 15
+    },
+    {
+      "seconds": 1071.169072204,
+      "stage": "prefill_and_generate",
+      "used_mib": 15
+    },
+    {
+      "seconds": 1071.23802075,
+      "stage": "prefill_and_generate",
+      "used_mib": 15
+    },
+    {
+      "seconds": 1071.306832396,
+      "stage": "prefill_and_generate",
+      "used_mib": 15
+    },
+    {
+      "seconds": 1071.376541022,
+      "stage": "prefill_and_generate",
+      "used_mib": 15
+    },
+    {
+      "seconds": 1071.445262757,
+      "stage": "prefill_and_generate",
+      "used_mib": 15
+    },
+    {
+      "seconds": 1071.514950253,
+      "stage": "prefill_and_generate",
+      "used_mib": 15
+    },
+    {
+      "seconds": 1071.584286689,
+      "stage": "prefill_and_generate",
+      "used_mib": 15
+    },
+    {
+      "seconds": 1071.653954504,
+      "stage": "prefill_and_generate",
+      "used_mib": 15
+    },
+    {
+      "seconds": 1071.7227898,
+      "stage": "prefill_and_generate",
+      "used_mib": 15
+    },
+    {
+      "seconds": 1071.792337455,
+      "stage": "prefill_and_generate",
+      "used_mib": 15
+    },
+    {
+      "seconds": 1071.860869971,
+      "stage": "prefill_and_generate",
+      "used_mib": 15
+    },
+    {
+      "seconds": 1071.931504956,
+      "stage": "prefill_and_generate",
+      "used_mib": 15
+    },
+    {
+      "seconds": 1072.000700062,
+      "stage": "prefill_and_generate",
+      "used_mib": 15
+    },
+    {
+      "seconds": 1072.070730837,
+      "stage": "prefill_and_generate",
+      "used_mib": 15
+    },
+    {
+      "seconds": 1072.140224143,
+      "stage": "prefill_and_generate",
+      "used_mib": 15
+    },
+    {
+      "seconds": 1072.209412018,
+      "stage": "prefill_and_generate",
+      "used_mib": 15
+    },
+    {
+      "seconds": 1072.278567814,
+      "stage": "prefill_and_generate",
+      "used_mib": 15
+    },
+    {
+      "seconds": 1072.346634659,
+      "stage": "prefill_and_generate",
+      "used_mib": 15
+    },
+    {
+      "seconds": 1072.415590645,
+      "stage": "prefill_and_generate",
+      "used_mib": 15
+    },
+    {
+      "seconds": 1072.48395195,
+      "stage": "prefill_and_generate",
+      "used_mib": 15
+    },
+    {
+      "seconds": 1072.553023745,
+      "stage": "prefill_and_generate",
+      "used_mib": 15
+    },
+    {
+      "seconds": 1072.621404421,
+      "stage": "prefill_and_generate",
+      "used_mib": 15
+    },
+    {
+      "seconds": 1072.690153706,
+      "stage": "prefill_and_generate",
+      "used_mib": 15
+    },
+    {
+      "seconds": 1072.758302581,
+      "stage": "prefill_and_generate",
+      "used_mib": 15
+    },
+    {
+      "seconds": 1072.827108866,
+      "stage": "prefill_and_generate",
+      "used_mib": 15
+    },
+    {
+      "seconds": 1072.895571962,
+      "stage": "prefill_and_generate",
+      "used_mib": 15
+    },
+    {
+      "seconds": 1072.964010097,
+      "stage": "prefill_and_generate",
+      "used_mib": 15
+    },
+    {
+      "seconds": 1073.032856482,
+      "stage": "prefill_and_generate",
+      "used_mib": 15
+    },
+    {
+      "seconds": 1073.102334747,
+      "stage": "prefill_and_generate",
+      "used_mib": 15
+    },
+    {
+      "seconds": 1073.172482943,
+      "stage": "prefill_and_generate",
+      "used_mib": 15
+    },
+    {
+      "seconds": 1073.241993918,
+      "stage": "prefill_and_generate",
+      "used_mib": 15
+    },
+    {
+      "seconds": 1073.311985794,
+      "stage": "prefill_and_generate",
+      "used_mib": 15
+    },
+    {
+      "seconds": 1073.381772019,
+      "stage": "prefill_and_generate",
+      "used_mib": 15
+    },
+    {
+      "seconds": 1073.451518744,
+      "stage": "prefill_and_generate",
+      "used_mib": 15
+    },
+    {
+      "seconds": 1073.520523489,
+      "stage": "prefill_and_generate",
+      "used_mib": 15
+    },
+    {
+      "seconds": 1073.589307314,
+      "stage": "prefill_and_generate",
+      "used_mib": 15
+    },
+    {
+      "seconds": 1073.659933659,
+      "stage": "prefill_and_generate",
+      "used_mib": 15
+    },
+    {
+      "seconds": 1073.729859865,
+      "stage": "prefill_and_generate",
+      "used_mib": 15
+    },
+    {
+      "seconds": 1073.79878412,
+      "stage": "prefill_and_generate",
+      "used_mib": 15
+    },
+    {
+      "seconds": 1073.867931114,
+      "stage": "prefill_and_generate",
+      "used_mib": 15
+    },
+    {
+      "seconds": 1073.93680053,
+      "stage": "prefill_and_generate",
+      "used_mib": 15
+    },
+    {
+      "seconds": 1074.005840585,
+      "stage": "prefill_and_generate",
+      "used_mib": 15
+    },
+    {
+      "seconds": 1074.07473921,
+      "stage": "prefill_and_generate",
+      "used_mib": 15
+    },
+    {
+      "seconds": 1074.143990905,
+      "stage": "prefill_and_generate",
+      "used_mib": 15
+    },
+    {
+      "seconds": 1074.21328551,
+      "stage": "prefill_and_generate",
+      "used_mib": 15
+    },
+    {
+      "seconds": 1074.282706375,
+      "stage": "prefill_and_generate",
+      "used_mib": 15
+    },
+    {
+      "seconds": 1074.3518528,
+      "stage": "prefill_and_generate",
+      "used_mib": 15
+    },
+    {
+      "seconds": 1074.421488345,
+      "stage": "prefill_and_generate",
+      "used_mib": 15
+    },
+    {
+      "seconds": 1074.49056451,
+      "stage": "prefill_and_generate",
+      "used_mib": 15
+    },
+    {
+      "seconds": 1074.560920025,
+      "stage": "prefill_and_generate",
+      "used_mib": 15
+    },
+    {
+      "seconds": 1074.6303763,
+      "stage": "prefill_and_generate",
+      "used_mib": 15
+    },
+    {
+      "seconds": 1074.700741775,
+      "stage": "prefill_and_generate",
+      "used_mib": 15
+    },
+    {
+      "seconds": 1074.77004038,
+      "stage": "prefill_and_generate",
+      "used_mib": 15
+    },
+    {
+      "seconds": 1074.840190255,
+      "stage": "prefill_and_generate",
+      "used_mib": 15
+    },
+    {
+      "seconds": 1074.909604679,
+      "stage": "prefill_and_generate",
+      "used_mib": 15
+    },
+    {
+      "seconds": 1074.979662684,
+      "stage": "prefill_and_generate",
+      "used_mib": 15
+    },
+    {
+      "seconds": 1075.049203729,
+      "stage": "prefill_and_generate",
+      "used_mib": 15
+    },
+    {
+      "seconds": 1075.117965654,
+      "stage": "prefill_and_generate",
+      "used_mib": 15
+    },
+    {
+      "seconds": 1075.187557459,
+      "stage": "prefill_and_generate",
+      "used_mib": 15
+    },
+    {
+      "seconds": 1075.257866214,
+      "stage": "loaded",
+      "used_mib": 15
+    },
+    {
+      "seconds": 1075.318079768,
+      "stage": "loaded",
+      "used_mib": 13
+    }
+  ]
+}

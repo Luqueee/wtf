@@ -358,6 +358,11 @@ fn bash_hook(executable: &str) -> String {
     format!(
         r#"if [[ -n ${{BASH_VERSION-}} && $- == *i* ]]; then
     __wtf_capture_bin={executable}
+    if ! command -v wtfr >/dev/null 2>&1; then
+        wtfr() {{
+            "$__wtf_capture_bin" --live -- "$@"
+        }}
+    fi
     if [[ -z ${{__wtf_capture_loaded-}} ]]; then
         __wtf_capture_preexec() {{
             [[ $BASH_COMMAND == __wtf_capture_precmd ]] && return 0
@@ -415,6 +420,11 @@ fn zsh_hook(executable: &str) -> String {
     format!(
         r#"if [[ -n ${{ZSH_VERSION-}} && -o interactive ]]; then
     __wtf_capture_bin={executable}
+    if ! command -v wtfr >/dev/null 2>&1; then
+        wtfr() {{
+            "$__wtf_capture_bin" --live -- "$@"
+        }}
+    fi
     if [[ -z ${{__wtf_capture_loaded-}} ]]; then
         zmodload zsh/datetime 2>/dev/null || true
         autoload -Uz add-zsh-hook
@@ -461,6 +471,11 @@ fn fish_hook(executable: &str) -> String {
     format!(
         r#"if status is-interactive
     set -g __wtf_capture_bin {executable}
+    if not type -q wtfr
+        function wtfr
+            "$__wtf_capture_bin" --live -- $argv
+        end
+    end
     if not set -q __wtf_capture_loaded
         function __wtf_capture_preexec --on-event fish_preexec
             set -g __wtf_capture_line "$argv[1]"
@@ -588,6 +603,37 @@ mod tests {
             .unwrap()
             .contains("already installed"));
         assert_eq!(fs::read_to_string(rc).unwrap(), first);
+    }
+
+    #[test]
+    fn live_wrapper_is_opt_in_quotes_the_binary_and_preserves_existing_bindings() {
+        let dir = tempdir().unwrap();
+        let executable = executable(dir.path());
+        let executable_text = executable.to_str().unwrap();
+
+        for shell in [Shell::Bash, Shell::Zsh, Shell::Fish] {
+            let block = hook_block(shell, &executable).unwrap();
+            let expected_assignment = if shell == Shell::Fish {
+                format!("set -g __wtf_capture_bin {}", fish_quote(executable_text))
+            } else {
+                format!("__wtf_capture_bin={}", shell_quote(executable_text))
+            };
+            assert!(block.contains(&expected_assignment));
+            assert_eq!(block.matches("--live --").count(), 1);
+
+            match shell {
+                Shell::Bash | Shell::Zsh => {
+                    assert!(block.contains("if ! command -v wtfr >/dev/null 2>&1; then"));
+                    assert!(block.contains("wtfr() {"));
+                    assert!(block.contains(r#""$__wtf_capture_bin" --live -- "$@""#));
+                }
+                Shell::Fish => {
+                    assert!(block.contains("if not type -q wtfr"));
+                    assert!(block.contains("function wtfr"));
+                    assert!(block.contains(r#""$__wtf_capture_bin" --live -- $argv"#));
+                }
+            }
+        }
     }
 
     #[test]

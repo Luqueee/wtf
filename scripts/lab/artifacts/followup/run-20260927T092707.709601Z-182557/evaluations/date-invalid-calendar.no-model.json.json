@@ -1,0 +1,58 @@
+{
+  "category": "unknown",
+  "command": "/usr/bin/date --date=2020-13-40",
+  "detection": null,
+  "duration": {
+    "nanos": 1601991,
+    "secs": 0
+  },
+  "entities": {
+    "containers": [],
+    "paths": [],
+    "ports": [],
+    "processes": [
+      "date"
+    ],
+    "services": []
+  },
+  "evidence": [
+    "date: invalid date '2020-13-40'"
+  ],
+  "exit_status": {
+    "code": 1,
+    "signal": null
+  },
+  "investigation": null,
+  "normalized": {
+    "clean_stderr": "date: invalid date '2020-13-40'\n\n",
+    "clean_stdout": "",
+    "collapsed_count": 0,
+    "relevant_lines": [
+      "date: invalid date '2020-13-40'"
+    ]
+  },
+  "remedy": null,
+  "report": {
+    "capture": "captured",
+    "captured_at": 1790501227,
+    "checks": 0,
+    "claims": [
+      {
+        "kind": "observed",
+        "source": {
+          "field": "stderr",
+          "type": "execution"
+        },
+        "text": "date: invalid date '2020-13-40'"
+      }
+    ],
+    "command_label": "date",
+    "outcome": "1",
+    "reported_at": 1790501256,
+    "source_mode": "explicit",
+    "summary": "Command failed: exit code 1."
+  },
+  "schema_version": 1,
+  "status": "Unknown",
+  "summary": "Command failed with exit code 1."
+}

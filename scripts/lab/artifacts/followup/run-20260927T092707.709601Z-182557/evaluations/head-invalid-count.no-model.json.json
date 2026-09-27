@@ -1,0 +1,58 @@
+{
+  "category": "unknown",
+  "command": "/usr/bin/head --bytes=not-a-number input.txt",
+  "detection": null,
+  "duration": {
+    "nanos": 1674400,
+    "secs": 0
+  },
+  "entities": {
+    "containers": [],
+    "paths": [],
+    "ports": [],
+    "processes": [
+      "head"
+    ],
+    "services": []
+  },
+  "evidence": [
+    "head: invalid number of bytes: 'not-a-number'"
+  ],
+  "exit_status": {
+    "code": 1,
+    "signal": null
+  },
+  "investigation": null,
+  "normalized": {
+    "clean_stderr": "head: invalid number of bytes: 'not-a-number'\n\n",
+    "clean_stdout": "",
+    "collapsed_count": 0,
+    "relevant_lines": [
+      "head: invalid number of bytes: 'not-a-number'"
+    ]
+  },
+  "remedy": null,
+  "report": {
+    "capture": "captured",
+    "captured_at": 1790501227,
+    "checks": 0,
+    "claims": [
+      {
+        "kind": "observed",
+        "source": {
+          "field": "stderr",
+          "type": "execution"
+        },
+        "text": "head: invalid number of bytes: 'not-a-number'"
+      }
+    ],
+    "command_label": "head",
+    "outcome": "1",
+    "reported_at": 1790501265,
+    "source_mode": "explicit",
+    "summary": "Command failed: exit code 1."
+  },
+  "schema_version": 1,
+  "status": "Unknown",
+  "summary": "Command failed with exit code 1."
+}

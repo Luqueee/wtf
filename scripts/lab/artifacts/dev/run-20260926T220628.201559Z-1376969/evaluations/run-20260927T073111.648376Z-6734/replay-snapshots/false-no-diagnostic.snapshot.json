@@ -1,0 +1,24 @@
+{
+  "execution": {
+    "command": "/usr/bin/false",
+    "args": [],
+    "cwd": "<LAB_TMP>",
+    "exit_status": {
+      "code": 1,
+      "signal": null
+    },
+    "stdout": "",
+    "stderr": "",
+    "duration": {
+      "secs": 0,
+      "nanos": 876690
+    },
+    "timestamp": {
+      "secs_since_epoch": 1790460388,
+      "nanos_since_epoch": 211910923
+    },
+    "spawn_error": null
+  },
+  "capture_truncated": false,
+  "source_mode": "explicit"
+}

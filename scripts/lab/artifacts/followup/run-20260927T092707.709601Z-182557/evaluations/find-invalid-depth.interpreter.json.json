@@ -1,0 +1,61 @@
+{
+  "category": "unknown",
+  "command": "/usr/bin/find . -maxdepth not-a-number -print",
+  "detection": null,
+  "duration": {
+    "nanos": 1588000,
+    "secs": 0
+  },
+  "entities": {
+    "containers": [],
+    "paths": [
+      "/usr/bin/find"
+    ],
+    "ports": [],
+    "processes": [
+      "find"
+    ],
+    "services": []
+  },
+  "evidence": [
+    "/usr/bin/find: Expected a positive decimal integer argument to -maxdepth, but got 'not-a-number'"
+  ],
+  "exit_status": {
+    "code": 1,
+    "signal": null
+  },
+  "interpretation_error": "invalid evidence reference: 1",
+  "investigation": null,
+  "normalized": {
+    "clean_stderr": "/usr/bin/find: Expected a positive decimal integer argument to -maxdepth, but got 'not-a-number'\n\n",
+    "clean_stdout": "",
+    "collapsed_count": 0,
+    "relevant_lines": [
+      "/usr/bin/find: Expected a positive decimal integer argument to -maxdepth, but got 'not-a-number'"
+    ]
+  },
+  "remedy": null,
+  "report": {
+    "capture": "captured",
+    "captured_at": 1790501227,
+    "checks": 0,
+    "claims": [
+      {
+        "kind": "observed",
+        "source": {
+          "field": "stderr",
+          "type": "execution"
+        },
+        "text": "/usr/bin/find: Expected a positive decimal integer argument to -maxdepth, but got 'not-a-number'"
+      }
+    ],
+    "command_label": "find",
+    "outcome": "1",
+    "reported_at": 1790501277,
+    "source_mode": "explicit",
+    "summary": "Command failed: exit code 1."
+  },
+  "schema_version": 1,
+  "status": "Unknown",
+  "summary": "Command failed with exit code 1."
+}

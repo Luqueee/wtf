@@ -325,7 +325,7 @@ fn is_wtf_command(line: &str) -> bool {
         unquote(&line[token.start..token.end])
             .rsplit('/')
             .next()
-            .is_some_and(|part| part == "wtf")
+            .is_some_and(|part| matches!(part, "wtf" | "wtfr"))
     })
 }
 
@@ -670,6 +670,7 @@ mod tests {
         assert!(is_wtf_command("wtf --verbose"));
         assert!(is_wtf_command("/opt/bin/wtf -- cat"));
         assert!(is_wtf_command("command wtf -- cat"));
+        assert!(is_wtf_command("wtfr cat missing-file"));
         assert!(!is_wtf_command("cargo test"));
     }
 }

@@ -1,0 +1,3 @@
+✗  curl  1
+   RESULT    Command failed: exit code 1.
+   OBSERVED  curl: (1) Protocol "no-such-scheme" not supported

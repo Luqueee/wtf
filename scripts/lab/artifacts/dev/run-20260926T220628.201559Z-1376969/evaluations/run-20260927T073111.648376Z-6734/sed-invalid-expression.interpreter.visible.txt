@@ -1,0 +1,3 @@
+✗  sed  1
+   RESULT    Command failed: exit code 1.
+   OBSERVED  /usr/bin/sed: -e [REDACTED] #1, char 6: unterminated 's' command

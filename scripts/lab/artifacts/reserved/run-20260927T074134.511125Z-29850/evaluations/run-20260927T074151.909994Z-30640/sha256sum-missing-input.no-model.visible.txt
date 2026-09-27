@@ -1,0 +1,4 @@
+✗  sha256sum  1
+   RESULT    Reported: File does not exist.
+   OBSERVED  sha256sum: missing-digest-input.bin: No such file or directory
+   MISSING   The original cause is not established by these observations.

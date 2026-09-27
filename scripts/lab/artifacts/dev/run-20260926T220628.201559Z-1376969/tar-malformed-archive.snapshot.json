@@ -1,0 +1,27 @@
+{
+  "execution": {
+    "command": "/usr/bin/tar",
+    "args": [
+      "-xf",
+      "malformed.tar"
+    ],
+    "cwd": "<LAB_TMP>",
+    "exit_status": {
+      "code": 2,
+      "signal": null
+    },
+    "stdout": "",
+    "stderr": "/usr/bin/tar: This does not look like a tar archive\n/usr/bin/tar: Exiting with failure status due to previous errors\n",
+    "duration": {
+      "secs": 0,
+      "nanos": 1896089
+    },
+    "timestamp": {
+      "secs_since_epoch": 1790460388,
+      "nanos_since_epoch": 206015865
+    },
+    "spawn_error": null
+  },
+  "capture_truncated": false,
+  "source_mode": "explicit"
+}

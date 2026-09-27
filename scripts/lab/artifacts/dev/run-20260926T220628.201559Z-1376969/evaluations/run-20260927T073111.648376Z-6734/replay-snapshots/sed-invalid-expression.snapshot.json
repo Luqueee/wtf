@@ -1,0 +1,28 @@
+{
+  "execution": {
+    "command": "/usr/bin/sed",
+    "args": [
+      "-n",
+      "s/[//p",
+      "input.txt"
+    ],
+    "cwd": "<LAB_TMP>",
+    "exit_status": {
+      "code": 1,
+      "signal": null
+    },
+    "stdout": "",
+    "stderr": "/usr/bin/sed: -e expression #1, char 6: unterminated 's' command\n",
+    "duration": {
+      "secs": 0,
+      "nanos": 1756060
+    },
+    "timestamp": {
+      "secs_since_epoch": 1790460388,
+      "nanos_since_epoch": 208165774
+    },
+    "spawn_error": null
+  },
+  "capture_truncated": false,
+  "source_mode": "explicit"
+}

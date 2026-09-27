@@ -1,0 +1,3 @@
+✗  iconv  1
+   RESULT    Command failed: exit code 1.
+   OBSERVED  /usr/bin/iconv: conversion from `not-a-real-encoding' is not supported

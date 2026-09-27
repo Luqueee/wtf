@@ -1,0 +1,86 @@
+{
+  "suite": "followup",
+  "manifest_sha256": "8cf19b7fbbe9c1836e4c10e68c63b2f79441e942119b25038ece038e72fd912b",
+  "oracle_sha256": "38c57bb1f0b4dedb9064c4b0917a65e9aa8fa05f9bf312c37f12ceaf597f4f9f",
+  "launch_attempts_total": 6,
+  "cases": [
+    {
+      "case_id": "base64-invalid-alphabet",
+      "family": "base64-decode",
+      "snapshot": "base64-invalid-alphabet.snapshot.json",
+      "snapshot_sha256": "a68bb153665fda101f2ac6d2bdfd91df39d63323266a78d4df8542bd504cff7e",
+      "launch_attempts": 1,
+      "status": {
+        "code": 1,
+        "signal": null
+      },
+      "timed_out": false,
+      "oracle_status_match": true
+    },
+    {
+      "case_id": "sort-invalid-separator",
+      "family": "sort-option-parse",
+      "snapshot": "sort-invalid-separator.snapshot.json",
+      "snapshot_sha256": "1681eefedef0286800e4d72969fb9e9d1c176caf722b651b1cbbdde66fbaa757",
+      "launch_attempts": 1,
+      "status": {
+        "code": 2,
+        "signal": null
+      },
+      "timed_out": false,
+      "oracle_status_match": true
+    },
+    {
+      "case_id": "diff-files-differ",
+      "family": "difference-status",
+      "snapshot": "diff-files-differ.snapshot.json",
+      "snapshot_sha256": "98d16dfabe4e66e724c047218a6706b31c75f9aa1ce9d46a5dabb4a4ff839c74",
+      "launch_attempts": 1,
+      "status": {
+        "code": 1,
+        "signal": null
+      },
+      "timed_out": false,
+      "oracle_status_match": true
+    },
+    {
+      "case_id": "date-invalid-calendar",
+      "family": "calendar-parse",
+      "snapshot": "date-invalid-calendar.snapshot.json",
+      "snapshot_sha256": "f565a7faf816910680be3422c16c8470f2cbcf96f533630b72a5093e5383d348",
+      "launch_attempts": 1,
+      "status": {
+        "code": 1,
+        "signal": null
+      },
+      "timed_out": false,
+      "oracle_status_match": true
+    },
+    {
+      "case_id": "head-invalid-count",
+      "family": "numeric-option-parse",
+      "snapshot": "head-invalid-count.snapshot.json",
+      "snapshot_sha256": "e91a70901c118974fca58dc5368b64674f67de73858e51c2cfda3c6faa97e673",
+      "launch_attempts": 1,
+      "status": {
+        "code": 1,
+        "signal": null
+      },
+      "timed_out": false,
+      "oracle_status_match": true
+    },
+    {
+      "case_id": "find-invalid-depth",
+      "family": "traversal-option-parse",
+      "snapshot": "find-invalid-depth.snapshot.json",
+      "snapshot_sha256": "01bcd8be59a9e865e21b54eb41989c319a847297955c0d80d79dc10d3cff3bfa",
+      "launch_attempts": 1,
+      "status": {
+        "code": 1,
+        "signal": null
+      },
+      "timed_out": false,
+      "oracle_status_match": true
+    }
+  ]
+}

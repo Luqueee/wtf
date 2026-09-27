@@ -230,7 +230,10 @@ mod unix {
             "{}",
             ground.name
         );
-        let expected_process_code = ground.code.map(|code| code as i32).or(Some(1));
+        let expected_process_code = ground
+            .code
+            .map(|code| code as i32)
+            .or_else(|| ground.signal.map(|signal| 128 + signal as i32));
         assert_eq!(
             result.measured.process_code, expected_process_code,
             "{}",
@@ -319,6 +322,15 @@ mod unix {
                             );
                             matched += 1;
                             expected_observation_seen = true;
+                        }
+                        (EvidenceOrigin::Probe { marker, .. }, "execution") => {
+                            assert_eq!(source["field"].as_str(), Some("stderr"), "{}", ground.name);
+                            assert!(
+                                text.contains(marker) && !text.starts_with("Now:"),
+                                "{}: historical stderr must be attributed to the execution, not current state: {claim}",
+                                ground.name
+                            );
+                            matched += 1;
                         }
                         (
                             EvidenceOrigin::Probe {

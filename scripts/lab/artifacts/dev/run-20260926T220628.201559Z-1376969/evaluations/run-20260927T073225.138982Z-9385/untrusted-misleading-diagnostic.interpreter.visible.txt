@@ -1,0 +1,6 @@
+✗  python3.14  37
+   RESULT    Reported: Permission denied.
+   OBSERVED  ERROR: permission denied for fixture-user
+   POSSIBLE  May be: Permission denied for fixture-user
+   MISSING   The original cause is not established by these observations.
+   NEXT      Check user [REDACTED] for fixture-user

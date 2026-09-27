@@ -1,0 +1,27 @@
+{
+  "execution": {
+    "command": "/usr/bin/sha256sum",
+    "args": [
+      "--",
+      "missing-digest-input.bin"
+    ],
+    "cwd": "<LAB_TMP>",
+    "exit_status": {
+      "code": 1,
+      "signal": null
+    },
+    "stdout": "",
+    "stderr": "sha256sum: missing-digest-input.bin: No such file or directory\n",
+    "duration": {
+      "secs": 0,
+      "nanos": 2130869
+    },
+    "timestamp": {
+      "secs_since_epoch": 1790494894,
+      "nanos_since_epoch": 520342545
+    },
+    "spawn_error": null
+  },
+  "capture_truncated": false,
+  "source_mode": "explicit"
+}

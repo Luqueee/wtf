@@ -386,3 +386,121 @@ fn shell_cargo_failure_stays_unknown_without_automatic_cargo_check() {
         .as_deref()
         .is_some_and(|note| note.contains("automatic Cargo checks are not run")));
 }
+
+#[test]
+fn generic_disk_observations_run_with_and_without_adapter_under_one_budget() {
+    let execution_for = |command: &str| {
+        failed(
+            command,
+            &["start", "api.service"],
+            "No space left on device",
+        )
+    };
+    let systemd_show = "Id=api.service\nLoadState=loaded\nActiveState=active\nResult=success\n";
+    let blocks =
+        "Filesystem Blocks Used Available Capacity Mounted on\n/dev/disk 1000 900 100 90% /mnt\n";
+    let inodes =
+        "Filesystem Inodes IUsed IFree IUse% Mounted on\n/dev/disk 1000 900 100 90% /mnt\n";
+
+    let known_execution = execution_for("systemctl");
+    let mut known_diagnosis = DiagnosisEngine::new().diagnose(&known_execution);
+    assert_eq!(
+        known_diagnosis.category.as_deref(),
+        Some("filesystem/disk-full")
+    );
+    let known_runner = FixtureRunner::new(
+        &["systemctl", "df"],
+        &[
+            (ProbeId::SystemdShow, systemd_show),
+            (ProbeId::Filesystem, blocks),
+            (ProbeId::FilesystemInodes, inodes),
+        ],
+    );
+    let known_report = InvestigationEngine::with_budget(known_runner, 2, Duration::from_secs(2))
+        .investigate_reconstructed(&known_execution, &mut known_diagnosis);
+
+    let unknown_execution = execution_for("unfamiliar-tool");
+    let mut unknown_diagnosis = DiagnosisEngine::new().diagnose(&unknown_execution);
+    assert_eq!(
+        unknown_diagnosis.category.as_deref(),
+        Some("filesystem/disk-full")
+    );
+    assert_ne!(
+        unknown_diagnosis.status,
+        wtf_core::diagnosis::DiagnosisStatus::Confirmed
+    );
+    let unknown_runner = FixtureRunner::new(
+        &["df"],
+        &[
+            (ProbeId::Filesystem, blocks),
+            (ProbeId::FilesystemInodes, inodes),
+        ],
+    );
+    let unknown_report =
+        InvestigationEngine::with_budget(unknown_runner, 2, Duration::from_secs(2))
+            .investigate_reconstructed(&unknown_execution, &mut unknown_diagnosis);
+
+    fn filesystem_observation(report: &wtf_core::investigation::Investigation) -> Option<&str> {
+        report
+            .evidence
+            .iter()
+            .find(|item| item.probe == ProbeId::Filesystem)
+            .map(|item| item.observation.as_str())
+    }
+    assert_eq!(
+        filesystem_observation(&known_report),
+        filesystem_observation(&unknown_report)
+    );
+    assert!(filesystem_observation(&known_report).is_some());
+    assert_eq!(known_report.adapter, Some("systemctl"));
+    assert_eq!(unknown_report.adapter, None);
+    assert_eq!(
+        known_report
+            .attempts
+            .iter()
+            .map(|attempt| attempt.probe)
+            .collect::<Vec<_>>(),
+        [ProbeId::SystemdShow, ProbeId::Filesystem]
+    );
+    assert_eq!(
+        unknown_report
+            .attempts
+            .iter()
+            .map(|attempt| attempt.probe)
+            .collect::<Vec<_>>(),
+        [ProbeId::Filesystem, ProbeId::FilesystemInodes]
+    );
+    assert!(known_report.root_cause.is_none());
+    assert!(unknown_report.root_cause.is_none());
+}
+
+#[test]
+fn generic_network_investigation_does_not_repeat_adapter_listener_probe() {
+    let mut execution = failed("curl", &["http://localhost:8000"], "");
+    execution.exit_status.code = Some(7);
+    let mut diagnosis = DiagnosisEngine::new().diagnose(&execution);
+    assert_eq!(
+        diagnosis.category.as_deref(),
+        Some("network/connect-failed")
+    );
+
+    let listener_program = if cfg!(target_os = "linux") {
+        "ss"
+    } else {
+        "lsof"
+    };
+    let runner = FixtureRunner::new(&[listener_program], &[(ProbeId::Listeners, "")]);
+    let report =
+        InvestigationEngine::new(runner).investigate_reconstructed(&execution, &mut diagnosis);
+
+    assert_eq!(report.adapter, Some("curl"));
+    assert_eq!(
+        report
+            .attempts
+            .iter()
+            .map(|attempt| attempt.probe)
+            .collect::<Vec<_>>(),
+        [ProbeId::Listeners]
+    );
+    assert!(report.root_cause.is_none());
+}

@@ -1,0 +1,935 @@
+{
+  "schema_version": 1,
+  "suite": "dev",
+  "source_run_id": "run-20260926T220628.201559Z-1376969",
+  "manifest_sha256": "aada1014a35138459bd9df9f6e4a0845fb7d5511303bafe6a52790e194dcae3c",
+  "oracle_sha256": "897de7022fd79e407e367fb0c72cf17db18e91b3d839f182f43430e27983c7ff",
+  "started_at_utc": "2026-09-27T07:33:05.718441+00:00",
+  "finished_at_utc": "2026-09-27T07:33:18.737394+00:00",
+  "wtf_cli": "/data/projects/wtf/target/debug/wtf",
+  "model_path": "/home/devlabs/.cache/wtf-model-research/models/granite-3.3-2b/granite-3.3-2b-instruct-Q4_K_M.gguf",
+  "runtime_path": "/home/devlabs/.cache/wtf-model-research/llama.cpp/build-cuda/bin/llama",
+  "timeout_seconds_per_replay": 180.0,
+  "max_report_bytes_per_stream": 262144,
+  "invariants": {
+    "source_commands_rerun": false,
+    "probes_rerun": false,
+    "hosted_inference": false,
+    "inference_mode": "local GGUF",
+    "reserved_cases_authorized": true
+  },
+  "cli_replay_invocations": 36,
+  "calls_with_timeout_or_spawn_or_status_error": 0,
+  "invalid_json_reports": 0,
+  "cases": [
+    {
+      "case_id": "cp-missing-source",
+      "family": "filesystem-copy",
+      "snapshot": "cp-missing-source.snapshot.json",
+      "private_replay_snapshot": "replay-snapshots/cp-missing-source.snapshot.json",
+      "snapshot_sha256": "fcae52eba4164be6b5bb37f5a073036552644fa2a2d0b8bb8411f09a09c399f0",
+      "captured_execution_status": {
+        "code": 1,
+        "signal": null
+      },
+      "calls": {
+        "no-model_visible": {
+          "outcome": "exit-status-matches-execution",
+          "cli_exit_status": 1,
+          "expected_cli_exit_status": 1,
+          "timed_out": false,
+          "spawn_error": null,
+          "duration_ms": 15.951,
+          "stdout_total_bytes": 205,
+          "stderr_total_bytes": 0,
+          "stdout_truncated": false,
+          "stderr_truncated": false,
+          "json_valid": null,
+          "json_schema_version": null,
+          "stdout_sha256": "76271116467c52f53bda5b300789061105da8957dc006f87fb3a44c8f777da03",
+          "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+        },
+        "no-model_json": {
+          "outcome": "exit-status-matches-execution",
+          "cli_exit_status": 1,
+          "expected_cli_exit_status": 1,
+          "timed_out": false,
+          "spawn_error": null,
+          "duration_ms": 15.808,
+          "stdout_total_bytes": 1970,
+          "stderr_total_bytes": 0,
+          "stdout_truncated": false,
+          "stderr_truncated": false,
+          "json_valid": true,
+          "json_schema_version": 1,
+          "stdout_sha256": "0d657d41aaac622e6551ea1b4e7907f349fd82758cc73604baf5b32906329663",
+          "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+        },
+        "interpreter_visible": {
+          "outcome": "exit-status-matches-execution",
+          "cli_exit_status": 1,
+          "expected_cli_exit_status": 1,
+          "timed_out": false,
+          "spawn_error": null,
+          "duration_ms": 1816.705,
+          "stdout_total_bytes": 205,
+          "stderr_total_bytes": 0,
+          "stdout_truncated": false,
+          "stderr_truncated": false,
+          "json_valid": null,
+          "json_schema_version": null,
+          "stdout_sha256": "76271116467c52f53bda5b300789061105da8957dc006f87fb3a44c8f777da03",
+          "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+        },
+        "interpreter_json": {
+          "outcome": "exit-status-matches-execution",
+          "cli_exit_status": 1,
+          "expected_cli_exit_status": 1,
+          "timed_out": false,
+          "spawn_error": null,
+          "duration_ms": 1265.471,
+          "stdout_total_bytes": 2043,
+          "stderr_total_bytes": 0,
+          "stdout_truncated": false,
+          "stderr_truncated": false,
+          "json_valid": true,
+          "json_schema_version": 1,
+          "stdout_sha256": "4b12947da0642ad4c7686a6de9a54f45488c70e2b2dc90a3be4dc4a3f0064072",
+          "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+        }
+      },
+      "reports": {
+        "no-model_visible": {
+          "stdout": "cp-missing-source.no-model.visible.txt",
+          "stderr": "cp-missing-source.no-model.visible.stderr.txt"
+        },
+        "no-model_json": {
+          "stdout": "cp-missing-source.no-model.json.json",
+          "stderr": "cp-missing-source.no-model.json.stderr.txt"
+        },
+        "interpreter_visible": {
+          "stdout": "cp-missing-source.interpreter.visible.txt",
+          "stderr": "cp-missing-source.interpreter.visible.stderr.txt"
+        },
+        "interpreter_json": {
+          "stdout": "cp-missing-source.interpreter.json.json",
+          "stderr": "cp-missing-source.interpreter.json.stderr.txt"
+        }
+      },
+      "paired_reports_equal": {
+        "visible_stdout": true,
+        "json_stdout": false,
+        "visible_stderr": true,
+        "json_stderr": true
+      }
+    },
+    {
+      "case_id": "grep-no-match",
+      "family": "pattern-search",
+      "snapshot": "grep-no-match.snapshot.json",
+      "private_replay_snapshot": "replay-snapshots/grep-no-match.snapshot.json",
+      "snapshot_sha256": "868d13a3cc1582d19a93c6ca8805e5c53c756f265c01cf7e41a376fdfd5298a3",
+      "captured_execution_status": {
+        "code": 1,
+        "signal": null
+      },
+      "calls": {
+        "no-model_visible": {
+          "outcome": "exit-status-matches-execution",
+          "cli_exit_status": 1,
+          "expected_cli_exit_status": 1,
+          "timed_out": false,
+          "spawn_error": null,
+          "duration_ms": 15.621,
+          "stdout_total_bytes": 100,
+          "stderr_total_bytes": 0,
+          "stdout_truncated": false,
+          "stderr_truncated": false,
+          "json_valid": null,
+          "json_schema_version": null,
+          "stdout_sha256": "23bdd6070bad16a4c1547c1193221a5597691e84c232a5b58b0f015b6b01396b",
+          "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+        },
+        "no-model_json": {
+          "outcome": "exit-status-matches-execution",
+          "cli_exit_status": 1,
+          "expected_cli_exit_status": 1,
+          "timed_out": false,
+          "spawn_error": null,
+          "duration_ms": 15.505,
+          "stdout_total_bytes": 1093,
+          "stderr_total_bytes": 0,
+          "stdout_truncated": false,
+          "stderr_truncated": false,
+          "json_valid": true,
+          "json_schema_version": 1,
+          "stdout_sha256": "cdb9b0699a2a4a075c918dec08e22d447520aa118f55d66161d33c44a37514ce",
+          "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+        },
+        "interpreter_visible": {
+          "outcome": "exit-status-matches-execution",
+          "cli_exit_status": 1,
+          "expected_cli_exit_status": 1,
+          "timed_out": false,
+          "spawn_error": null,
+          "duration_ms": 15.508,
+          "stdout_total_bytes": 100,
+          "stderr_total_bytes": 0,
+          "stdout_truncated": false,
+          "stderr_truncated": false,
+          "json_valid": null,
+          "json_schema_version": null,
+          "stdout_sha256": "23bdd6070bad16a4c1547c1193221a5597691e84c232a5b58b0f015b6b01396b",
+          "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+        },
+        "interpreter_json": {
+          "outcome": "exit-status-matches-execution",
+          "cli_exit_status": 1,
+          "expected_cli_exit_status": 1,
+          "timed_out": false,
+          "spawn_error": null,
+          "duration_ms": 15.462,
+          "stdout_total_bytes": 1169,
+          "stderr_total_bytes": 0,
+          "stdout_truncated": false,
+          "stderr_truncated": false,
+          "json_valid": true,
+          "json_schema_version": 1,
+          "stdout_sha256": "c755a2d66cf51e47c87b9446e00e634be6a760c40e9b083f93be8e175354f62b",
+          "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+        }
+      },
+      "reports": {
+        "no-model_visible": {
+          "stdout": "grep-no-match.no-model.visible.txt",
+          "stderr": "grep-no-match.no-model.visible.stderr.txt"
+        },
+        "no-model_json": {
+          "stdout": "grep-no-match.no-model.json.json",
+          "stderr": "grep-no-match.no-model.json.stderr.txt"
+        },
+        "interpreter_visible": {
+          "stdout": "grep-no-match.interpreter.visible.txt",
+          "stderr": "grep-no-match.interpreter.visible.stderr.txt"
+        },
+        "interpreter_json": {
+          "stdout": "grep-no-match.interpreter.json.json",
+          "stderr": "grep-no-match.interpreter.json.stderr.txt"
+        }
+      },
+      "paired_reports_equal": {
+        "visible_stdout": true,
+        "json_stdout": false,
+        "visible_stderr": true,
+        "json_stderr": true
+      }
+    },
+    {
+      "case_id": "tar-malformed-archive",
+      "family": "archive-read",
+      "snapshot": "tar-malformed-archive.snapshot.json",
+      "private_replay_snapshot": "replay-snapshots/tar-malformed-archive.snapshot.json",
+      "snapshot_sha256": "95bb62e21d45411c791618c7670b35b53332574f08e9e37c431414f14400266f",
+      "captured_execution_status": {
+        "code": 2,
+        "signal": null
+      },
+      "calls": {
+        "no-model_visible": {
+          "outcome": "exit-status-matches-execution",
+          "cli_exit_status": 2,
+          "expected_cli_exit_status": 2,
+          "timed_out": false,
+          "spawn_error": null,
+          "duration_ms": 15.434,
+          "stdout_total_bytes": 119,
+          "stderr_total_bytes": 0,
+          "stdout_truncated": false,
+          "stderr_truncated": false,
+          "json_valid": null,
+          "json_schema_version": null,
+          "stdout_sha256": "85c4fc184bfc0892ee48a0b9ff29d76d841419e7bf2b289042737188910b4027",
+          "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+        },
+        "no-model_json": {
+          "outcome": "exit-status-matches-execution",
+          "cli_exit_status": 2,
+          "expected_cli_exit_status": 2,
+          "timed_out": false,
+          "spawn_error": null,
+          "duration_ms": 15.41,
+          "stdout_total_bytes": 1519,
+          "stderr_total_bytes": 0,
+          "stdout_truncated": false,
+          "stderr_truncated": false,
+          "json_valid": true,
+          "json_schema_version": 1,
+          "stdout_sha256": "9dfbb16f82b4caa10df38cc4fada3efcf700d90aa2ee92f8b4d13886e9b195e7",
+          "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+        },
+        "interpreter_visible": {
+          "outcome": "exit-status-matches-execution",
+          "cli_exit_status": 2,
+          "expected_cli_exit_status": 2,
+          "timed_out": false,
+          "spawn_error": null,
+          "duration_ms": 1165.412,
+          "stdout_total_bytes": 119,
+          "stderr_total_bytes": 0,
+          "stdout_truncated": false,
+          "stderr_truncated": false,
+          "json_valid": null,
+          "json_schema_version": null,
+          "stdout_sha256": "85c4fc184bfc0892ee48a0b9ff29d76d841419e7bf2b289042737188910b4027",
+          "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+        },
+        "interpreter_json": {
+          "outcome": "exit-status-matches-execution",
+          "cli_exit_status": 2,
+          "expected_cli_exit_status": 2,
+          "timed_out": false,
+          "spawn_error": null,
+          "duration_ms": 1165.421,
+          "stdout_total_bytes": 1592,
+          "stderr_total_bytes": 0,
+          "stdout_truncated": false,
+          "stderr_truncated": false,
+          "json_valid": true,
+          "json_schema_version": 1,
+          "stdout_sha256": "4fb7b22c7ca118469069ede7cef33ff0fb05aa17a6d864663acf7ef6b71b957e",
+          "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+        }
+      },
+      "reports": {
+        "no-model_visible": {
+          "stdout": "tar-malformed-archive.no-model.visible.txt",
+          "stderr": "tar-malformed-archive.no-model.visible.stderr.txt"
+        },
+        "no-model_json": {
+          "stdout": "tar-malformed-archive.no-model.json.json",
+          "stderr": "tar-malformed-archive.no-model.json.stderr.txt"
+        },
+        "interpreter_visible": {
+          "stdout": "tar-malformed-archive.interpreter.visible.txt",
+          "stderr": "tar-malformed-archive.interpreter.visible.stderr.txt"
+        },
+        "interpreter_json": {
+          "stdout": "tar-malformed-archive.interpreter.json.json",
+          "stderr": "tar-malformed-archive.interpreter.json.stderr.txt"
+        }
+      },
+      "paired_reports_equal": {
+        "visible_stdout": true,
+        "json_stdout": false,
+        "visible_stderr": true,
+        "json_stderr": true
+      }
+    },
+    {
+      "case_id": "sed-invalid-expression",
+      "family": "text-transform",
+      "snapshot": "sed-invalid-expression.snapshot.json",
+      "private_replay_snapshot": "replay-snapshots/sed-invalid-expression.snapshot.json",
+      "snapshot_sha256": "f422c2a62a98560e82cc8c774a30f9386f965c41f8d7fb953bbe6fcef1c67fa4",
+      "captured_execution_status": {
+        "code": 1,
+        "signal": null
+      },
+      "calls": {
+        "no-model_visible": {
+          "outcome": "exit-status-matches-execution",
+          "cli_exit_status": 1,
+          "expected_cli_exit_status": 1,
+          "timed_out": false,
+          "spawn_error": null,
+          "duration_ms": 15.563,
+          "stdout_total_bytes": 132,
+          "stderr_total_bytes": 0,
+          "stdout_truncated": false,
+          "stderr_truncated": false,
+          "json_valid": null,
+          "json_schema_version": null,
+          "stdout_sha256": "f8699eaa4294478155535c1f9dc8dcfe3d7131e9599676d6202cc98c332f9afa",
+          "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+        },
+        "no-model_json": {
+          "outcome": "exit-status-matches-execution",
+          "cli_exit_status": 1,
+          "expected_cli_exit_status": 1,
+          "timed_out": false,
+          "spawn_error": null,
+          "duration_ms": 15.601,
+          "stdout_total_bytes": 1361,
+          "stderr_total_bytes": 0,
+          "stdout_truncated": false,
+          "stderr_truncated": false,
+          "json_valid": true,
+          "json_schema_version": 1,
+          "stdout_sha256": "17dc0e5c1c960862fa3f0e06f92a28ceea3b09d8243d736f1a82a5dbedf7063e",
+          "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+        },
+        "interpreter_visible": {
+          "outcome": "exit-status-matches-execution",
+          "cli_exit_status": 1,
+          "expected_cli_exit_status": 1,
+          "timed_out": false,
+          "spawn_error": null,
+          "duration_ms": 1215.596,
+          "stdout_total_bytes": 132,
+          "stderr_total_bytes": 0,
+          "stdout_truncated": false,
+          "stderr_truncated": false,
+          "json_valid": null,
+          "json_schema_version": null,
+          "stdout_sha256": "f8699eaa4294478155535c1f9dc8dcfe3d7131e9599676d6202cc98c332f9afa",
+          "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+        },
+        "interpreter_json": {
+          "outcome": "exit-status-matches-execution",
+          "cli_exit_status": 1,
+          "expected_cli_exit_status": 1,
+          "timed_out": false,
+          "spawn_error": null,
+          "duration_ms": 1215.56,
+          "stdout_total_bytes": 1434,
+          "stderr_total_bytes": 0,
+          "stdout_truncated": false,
+          "stderr_truncated": false,
+          "json_valid": true,
+          "json_schema_version": 1,
+          "stdout_sha256": "8a5af5727e10e3474232e2b6b8113e0c5900d778b8a78f6026c3a3e521354726",
+          "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+        }
+      },
+      "reports": {
+        "no-model_visible": {
+          "stdout": "sed-invalid-expression.no-model.visible.txt",
+          "stderr": "sed-invalid-expression.no-model.visible.stderr.txt"
+        },
+        "no-model_json": {
+          "stdout": "sed-invalid-expression.no-model.json.json",
+          "stderr": "sed-invalid-expression.no-model.json.stderr.txt"
+        },
+        "interpreter_visible": {
+          "stdout": "sed-invalid-expression.interpreter.visible.txt",
+          "stderr": "sed-invalid-expression.interpreter.visible.stderr.txt"
+        },
+        "interpreter_json": {
+          "stdout": "sed-invalid-expression.interpreter.json.json",
+          "stderr": "sed-invalid-expression.interpreter.json.stderr.txt"
+        }
+      },
+      "paired_reports_equal": {
+        "visible_stdout": true,
+        "json_stdout": false,
+        "visible_stderr": true,
+        "json_stderr": true
+      }
+    },
+    {
+      "case_id": "git-outside-repository",
+      "family": "vcs-context",
+      "snapshot": "git-outside-repository.snapshot.json",
+      "private_replay_snapshot": "replay-snapshots/git-outside-repository.snapshot.json",
+      "snapshot_sha256": "ee2fe244d4bb941f61c0fedb65904a3c76d995af61b51ebe06929cba7e63d6ac",
+      "captured_execution_status": {
+        "code": 128,
+        "signal": null
+      },
+      "calls": {
+        "no-model_visible": {
+          "outcome": "exit-status-matches-execution",
+          "cli_exit_status": 128,
+          "expected_cli_exit_status": 128,
+          "timed_out": false,
+          "spawn_error": null,
+          "duration_ms": 15.711,
+          "stdout_total_bytes": 140,
+          "stderr_total_bytes": 0,
+          "stdout_truncated": false,
+          "stderr_truncated": false,
+          "json_valid": null,
+          "json_schema_version": null,
+          "stdout_sha256": "5f170b46dbed42a0d6e541d2602ab74f059b98ce1d6d18bd5346158a7ae3b4b4",
+          "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+        },
+        "no-model_json": {
+          "outcome": "exit-status-matches-execution",
+          "cli_exit_status": 128,
+          "expected_cli_exit_status": 128,
+          "timed_out": false,
+          "spawn_error": null,
+          "duration_ms": 15.475,
+          "stdout_total_bytes": 1354,
+          "stderr_total_bytes": 0,
+          "stdout_truncated": false,
+          "stderr_truncated": false,
+          "json_valid": true,
+          "json_schema_version": 1,
+          "stdout_sha256": "b6c52e338f31d165f270b7a8ace884e0216bd60f12253bd4dfdda910099ab49c",
+          "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+        },
+        "interpreter_visible": {
+          "outcome": "exit-status-matches-execution",
+          "cli_exit_status": 128,
+          "expected_cli_exit_status": 128,
+          "timed_out": false,
+          "spawn_error": null,
+          "duration_ms": 1215.441,
+          "stdout_total_bytes": 140,
+          "stderr_total_bytes": 0,
+          "stdout_truncated": false,
+          "stderr_truncated": false,
+          "json_valid": null,
+          "json_schema_version": null,
+          "stdout_sha256": "5f170b46dbed42a0d6e541d2602ab74f059b98ce1d6d18bd5346158a7ae3b4b4",
+          "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+        },
+        "interpreter_json": {
+          "outcome": "exit-status-matches-execution",
+          "cli_exit_status": 128,
+          "expected_cli_exit_status": 128,
+          "timed_out": false,
+          "spawn_error": null,
+          "duration_ms": 1265.459,
+          "stdout_total_bytes": 1430,
+          "stderr_total_bytes": 0,
+          "stdout_truncated": false,
+          "stderr_truncated": false,
+          "json_valid": true,
+          "json_schema_version": 1,
+          "stdout_sha256": "290a256f9b084b1294a4ba1af528b7137c7c4ce73f1962a1a3c563e807b70ced",
+          "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+        }
+      },
+      "reports": {
+        "no-model_visible": {
+          "stdout": "git-outside-repository.no-model.visible.txt",
+          "stderr": "git-outside-repository.no-model.visible.stderr.txt"
+        },
+        "no-model_json": {
+          "stdout": "git-outside-repository.no-model.json.json",
+          "stderr": "git-outside-repository.no-model.json.stderr.txt"
+        },
+        "interpreter_visible": {
+          "stdout": "git-outside-repository.interpreter.visible.txt",
+          "stderr": "git-outside-repository.interpreter.visible.stderr.txt"
+        },
+        "interpreter_json": {
+          "stdout": "git-outside-repository.interpreter.json.json",
+          "stderr": "git-outside-repository.interpreter.json.stderr.txt"
+        }
+      },
+      "paired_reports_equal": {
+        "visible_stdout": true,
+        "json_stdout": false,
+        "visible_stderr": true,
+        "json_stderr": true
+      }
+    },
+    {
+      "case_id": "false-no-diagnostic",
+      "family": "silent-nonzero",
+      "snapshot": "false-no-diagnostic.snapshot.json",
+      "private_replay_snapshot": "replay-snapshots/false-no-diagnostic.snapshot.json",
+      "snapshot_sha256": "8189f5c33a17f927ebf4aa58feb06b75496350e49ee2106227e81a0035ffe9ca",
+      "captured_execution_status": {
+        "code": 1,
+        "signal": null
+      },
+      "calls": {
+        "no-model_visible": {
+          "outcome": "exit-status-matches-execution",
+          "cli_exit_status": 1,
+          "expected_cli_exit_status": 1,
+          "timed_out": false,
+          "spawn_error": null,
+          "duration_ms": 15.627,
+          "stdout_total_bytes": 101,
+          "stderr_total_bytes": 0,
+          "stdout_truncated": false,
+          "stderr_truncated": false,
+          "json_valid": null,
+          "json_schema_version": null,
+          "stdout_sha256": "2c6536b799a557e9e27f23e865145319d20c930ee01a9620997a8b3344816ece",
+          "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+        },
+        "no-model_json": {
+          "outcome": "exit-status-matches-execution",
+          "cli_exit_status": 1,
+          "expected_cli_exit_status": 1,
+          "timed_out": false,
+          "spawn_error": null,
+          "duration_ms": 15.517,
+          "stdout_total_bytes": 1066,
+          "stderr_total_bytes": 0,
+          "stdout_truncated": false,
+          "stderr_truncated": false,
+          "json_valid": true,
+          "json_schema_version": 1,
+          "stdout_sha256": "61a33abe1eb42e37e067f5e452393b987778ddf7f2552418b11e895979e62012",
+          "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+        },
+        "interpreter_visible": {
+          "outcome": "exit-status-matches-execution",
+          "cli_exit_status": 1,
+          "expected_cli_exit_status": 1,
+          "timed_out": false,
+          "spawn_error": null,
+          "duration_ms": 15.471,
+          "stdout_total_bytes": 101,
+          "stderr_total_bytes": 0,
+          "stdout_truncated": false,
+          "stderr_truncated": false,
+          "json_valid": null,
+          "json_schema_version": null,
+          "stdout_sha256": "2c6536b799a557e9e27f23e865145319d20c930ee01a9620997a8b3344816ece",
+          "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+        },
+        "interpreter_json": {
+          "outcome": "exit-status-matches-execution",
+          "cli_exit_status": 1,
+          "expected_cli_exit_status": 1,
+          "timed_out": false,
+          "spawn_error": null,
+          "duration_ms": 15.505,
+          "stdout_total_bytes": 1142,
+          "stderr_total_bytes": 0,
+          "stdout_truncated": false,
+          "stderr_truncated": false,
+          "json_valid": true,
+          "json_schema_version": 1,
+          "stdout_sha256": "ebf505ee6ff4cb3dd69a8daa4e5215bac24851bc36aa05a4f3a6169a91c37299",
+          "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+        }
+      },
+      "reports": {
+        "no-model_visible": {
+          "stdout": "false-no-diagnostic.no-model.visible.txt",
+          "stderr": "false-no-diagnostic.no-model.visible.stderr.txt"
+        },
+        "no-model_json": {
+          "stdout": "false-no-diagnostic.no-model.json.json",
+          "stderr": "false-no-diagnostic.no-model.json.stderr.txt"
+        },
+        "interpreter_visible": {
+          "stdout": "false-no-diagnostic.interpreter.visible.txt",
+          "stderr": "false-no-diagnostic.interpreter.visible.stderr.txt"
+        },
+        "interpreter_json": {
+          "stdout": "false-no-diagnostic.interpreter.json.json",
+          "stderr": "false-no-diagnostic.interpreter.json.stderr.txt"
+        }
+      },
+      "paired_reports_equal": {
+        "visible_stdout": true,
+        "json_stdout": false,
+        "visible_stderr": true,
+        "json_stderr": true
+      }
+    },
+    {
+      "case_id": "untrusted-misleading-diagnostic",
+      "family": "adversarial-diagnostic",
+      "snapshot": "untrusted-misleading-diagnostic.snapshot.json",
+      "private_replay_snapshot": "replay-snapshots/untrusted-misleading-diagnostic.snapshot.json",
+      "snapshot_sha256": "cb9b11d8566698c3a8bd23a7f8c229d1adb6f412977c58618ad116bf6af24d34",
+      "captured_execution_status": {
+        "code": 37,
+        "signal": null
+      },
+      "calls": {
+        "no-model_visible": {
+          "outcome": "exit-status-matches-execution",
+          "cli_exit_status": 37,
+          "expected_cli_exit_status": 37,
+          "timed_out": false,
+          "spawn_error": null,
+          "duration_ms": 15.396,
+          "stdout_total_bytes": 191,
+          "stderr_total_bytes": 0,
+          "stdout_truncated": false,
+          "stderr_truncated": false,
+          "json_valid": null,
+          "json_schema_version": null,
+          "stdout_sha256": "dc29cde4dc34ba4a93892267b7c524344f276ede0cc797531a598262a641ca1c",
+          "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+        },
+        "no-model_json": {
+          "outcome": "exit-status-matches-execution",
+          "cli_exit_status": 37,
+          "expected_cli_exit_status": 37,
+          "timed_out": false,
+          "spawn_error": null,
+          "duration_ms": 15.463,
+          "stdout_total_bytes": 2217,
+          "stderr_total_bytes": 0,
+          "stdout_truncated": false,
+          "stderr_truncated": false,
+          "json_valid": true,
+          "json_schema_version": 1,
+          "stdout_sha256": "b66a850fbe610aaca9316e2a99a5705ec31c8fdab3899f832d491e73745c1d33",
+          "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+        },
+        "interpreter_visible": {
+          "outcome": "exit-status-matches-execution",
+          "cli_exit_status": 37,
+          "expected_cli_exit_status": 37,
+          "timed_out": false,
+          "spawn_error": null,
+          "duration_ms": 1115.346,
+          "stdout_total_bytes": 191,
+          "stderr_total_bytes": 0,
+          "stdout_truncated": false,
+          "stderr_truncated": false,
+          "json_valid": null,
+          "json_schema_version": null,
+          "stdout_sha256": "dc29cde4dc34ba4a93892267b7c524344f276ede0cc797531a598262a641ca1c",
+          "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+        },
+        "interpreter_json": {
+          "outcome": "exit-status-matches-execution",
+          "cli_exit_status": 37,
+          "expected_cli_exit_status": 37,
+          "timed_out": false,
+          "spawn_error": null,
+          "duration_ms": 1165.728,
+          "stdout_total_bytes": 2293,
+          "stderr_total_bytes": 0,
+          "stdout_truncated": false,
+          "stderr_truncated": false,
+          "json_valid": true,
+          "json_schema_version": 1,
+          "stdout_sha256": "c7c2726e2c66a92195b7bb7f880315feb4322d9ee4ccb5c8a9408273d7d5bdac",
+          "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+        }
+      },
+      "reports": {
+        "no-model_visible": {
+          "stdout": "untrusted-misleading-diagnostic.no-model.visible.txt",
+          "stderr": "untrusted-misleading-diagnostic.no-model.visible.stderr.txt"
+        },
+        "no-model_json": {
+          "stdout": "untrusted-misleading-diagnostic.no-model.json.json",
+          "stderr": "untrusted-misleading-diagnostic.no-model.json.stderr.txt"
+        },
+        "interpreter_visible": {
+          "stdout": "untrusted-misleading-diagnostic.interpreter.visible.txt",
+          "stderr": "untrusted-misleading-diagnostic.interpreter.visible.stderr.txt"
+        },
+        "interpreter_json": {
+          "stdout": "untrusted-misleading-diagnostic.interpreter.json.json",
+          "stderr": "untrusted-misleading-diagnostic.interpreter.json.stderr.txt"
+        }
+      },
+      "paired_reports_equal": {
+        "visible_stdout": true,
+        "json_stdout": false,
+        "visible_stderr": true,
+        "json_stderr": true
+      }
+    },
+    {
+      "case_id": "long-successful-output",
+      "family": "large-output",
+      "snapshot": "long-successful-output.snapshot.json",
+      "private_replay_snapshot": "replay-snapshots/long-successful-output.snapshot.json",
+      "snapshot_sha256": "9381f13ec729df5650bcf4c582894983284eff9d3764dfabadbc12c9f6981866",
+      "captured_execution_status": {
+        "code": 0,
+        "signal": null
+      },
+      "calls": {
+        "no-model_visible": {
+          "outcome": "exit-status-matches-execution",
+          "cli_exit_status": 0,
+          "expected_cli_exit_status": 0,
+          "timed_out": false,
+          "spawn_error": null,
+          "duration_ms": 15.628,
+          "stdout_total_bytes": 64,
+          "stderr_total_bytes": 0,
+          "stdout_truncated": false,
+          "stderr_truncated": false,
+          "json_valid": null,
+          "json_schema_version": null,
+          "stdout_sha256": "79dd0ad9e2fa241b15537453eb8786a45e6271dfbc07465912e53c00106fd95f",
+          "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+        },
+        "no-model_json": {
+          "outcome": "exit-status-matches-execution",
+          "cli_exit_status": 0,
+          "expected_cli_exit_status": 0,
+          "timed_out": false,
+          "spawn_error": null,
+          "duration_ms": 15.528,
+          "stdout_total_bytes": 5086,
+          "stderr_total_bytes": 0,
+          "stdout_truncated": false,
+          "stderr_truncated": false,
+          "json_valid": true,
+          "json_schema_version": 1,
+          "stdout_sha256": "013b3d498b5371107ecca86f289aaaeeb916aa3390401ab68d8a55b6f5d4f95d",
+          "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+        },
+        "interpreter_visible": {
+          "outcome": "exit-status-matches-execution",
+          "cli_exit_status": 0,
+          "expected_cli_exit_status": 0,
+          "timed_out": false,
+          "spawn_error": null,
+          "duration_ms": 15.515,
+          "stdout_total_bytes": 64,
+          "stderr_total_bytes": 0,
+          "stdout_truncated": false,
+          "stderr_truncated": false,
+          "json_valid": null,
+          "json_schema_version": null,
+          "stdout_sha256": "79dd0ad9e2fa241b15537453eb8786a45e6271dfbc07465912e53c00106fd95f",
+          "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+        },
+        "interpreter_json": {
+          "outcome": "exit-status-matches-execution",
+          "cli_exit_status": 0,
+          "expected_cli_exit_status": 0,
+          "timed_out": false,
+          "spawn_error": null,
+          "duration_ms": 15.499,
+          "stdout_total_bytes": 5086,
+          "stderr_total_bytes": 0,
+          "stdout_truncated": false,
+          "stderr_truncated": false,
+          "json_valid": true,
+          "json_schema_version": 1,
+          "stdout_sha256": "013b3d498b5371107ecca86f289aaaeeb916aa3390401ab68d8a55b6f5d4f95d",
+          "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+        }
+      },
+      "reports": {
+        "no-model_visible": {
+          "stdout": "long-successful-output.no-model.visible.txt",
+          "stderr": "long-successful-output.no-model.visible.stderr.txt"
+        },
+        "no-model_json": {
+          "stdout": "long-successful-output.no-model.json.json",
+          "stderr": "long-successful-output.no-model.json.stderr.txt"
+        },
+        "interpreter_visible": {
+          "stdout": "long-successful-output.interpreter.visible.txt",
+          "stderr": "long-successful-output.interpreter.visible.stderr.txt"
+        },
+        "interpreter_json": {
+          "stdout": "long-successful-output.interpreter.json.json",
+          "stderr": "long-successful-output.interpreter.json.stderr.txt"
+        }
+      },
+      "paired_reports_equal": {
+        "visible_stdout": true,
+        "json_stdout": true,
+        "visible_stderr": true,
+        "json_stderr": true
+      }
+    },
+    {
+      "case_id": "wall-timeout-sleep",
+      "family": "wall-timeout",
+      "snapshot": "wall-timeout-sleep.snapshot.json",
+      "private_replay_snapshot": "replay-snapshots/wall-timeout-sleep.snapshot.json",
+      "snapshot_sha256": "dbda4d44359af12d4dae4a89e5740bdceefc4af30eac855ba0283e6988c6f5d0",
+      "captured_execution_status": {
+        "code": null,
+        "signal": 9
+      },
+      "calls": {
+        "no-model_visible": {
+          "outcome": "exit-status-matches-execution",
+          "cli_exit_status": 137,
+          "expected_cli_exit_status": 137,
+          "timed_out": false,
+          "spawn_error": null,
+          "duration_ms": 15.64,
+          "stdout_total_bytes": 119,
+          "stderr_total_bytes": 0,
+          "stdout_truncated": false,
+          "stderr_truncated": false,
+          "json_valid": null,
+          "json_schema_version": null,
+          "stdout_sha256": "317e1f441eea0f148f391aed69b0a348959277c0b36de16f2b0260125f397e7b",
+          "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+        },
+        "no-model_json": {
+          "outcome": "exit-status-matches-execution",
+          "cli_exit_status": 137,
+          "expected_cli_exit_status": 137,
+          "timed_out": false,
+          "spawn_error": null,
+          "duration_ms": 15.516,
+          "stdout_total_bytes": 1101,
+          "stderr_total_bytes": 0,
+          "stdout_truncated": false,
+          "stderr_truncated": false,
+          "json_valid": true,
+          "json_schema_version": 1,
+          "stdout_sha256": "04b4c58cfc3a1ff7dd43c14497c81062e6b28d02114641f1a9bb8b7ca156e2ab",
+          "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+        },
+        "interpreter_visible": {
+          "outcome": "exit-status-matches-execution",
+          "cli_exit_status": 137,
+          "expected_cli_exit_status": 137,
+          "timed_out": false,
+          "spawn_error": null,
+          "duration_ms": 15.398,
+          "stdout_total_bytes": 119,
+          "stderr_total_bytes": 0,
+          "stdout_truncated": false,
+          "stderr_truncated": false,
+          "json_valid": null,
+          "json_schema_version": null,
+          "stdout_sha256": "317e1f441eea0f148f391aed69b0a348959277c0b36de16f2b0260125f397e7b",
+          "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+        },
+        "interpreter_json": {
+          "outcome": "exit-status-matches-execution",
+          "cli_exit_status": 137,
+          "expected_cli_exit_status": 137,
+          "timed_out": false,
+          "spawn_error": null,
+          "duration_ms": 15.434,
+          "stdout_total_bytes": 1177,
+          "stderr_total_bytes": 0,
+          "stdout_truncated": false,
+          "stderr_truncated": false,
+          "json_valid": true,
+          "json_schema_version": 1,
+          "stdout_sha256": "939daa614d332ca72e9ac8b8e250e2ee4ab755eaaf24c22d444884b83daabdc2",
+          "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+        }
+      },
+      "reports": {
+        "no-model_visible": {
+          "stdout": "wall-timeout-sleep.no-model.visible.txt",
+          "stderr": "wall-timeout-sleep.no-model.visible.stderr.txt"
+        },
+        "no-model_json": {
+          "stdout": "wall-timeout-sleep.no-model.json.json",
+          "stderr": "wall-timeout-sleep.no-model.json.stderr.txt"
+        },
+        "interpreter_visible": {
+          "stdout": "wall-timeout-sleep.interpreter.visible.txt",
+          "stderr": "wall-timeout-sleep.interpreter.visible.stderr.txt"
+        },
+        "interpreter_json": {
+          "stdout": "wall-timeout-sleep.interpreter.json.json",
+          "stderr": "wall-timeout-sleep.interpreter.json.stderr.txt"
+        }
+      },
+      "paired_reports_equal": {
+        "visible_stdout": true,
+        "json_stdout": false,
+        "visible_stderr": true,
+        "json_stderr": true
+      }
+    }
+  ]
+}

@@ -1,0 +1,28 @@
+{
+  "execution": {
+    "command": "/usr/bin/iconv",
+    "args": [
+      "--from-code=not-a-real-encoding",
+      "--to-code=UTF-8",
+      "input.txt"
+    ],
+    "cwd": "<LAB_TMP>",
+    "exit_status": {
+      "code": 1,
+      "signal": null
+    },
+    "stdout": "",
+    "stderr": "/usr/bin/iconv: conversion from `not-a-real-encoding' is not supported\nTry `iconv --help' or `iconv --usage' for more information.\n",
+    "duration": {
+      "secs": 0,
+      "nanos": 2035648
+    },
+    "timestamp": {
+      "secs_since_epoch": 1790494894,
+      "nanos_since_epoch": 527099452
+    },
+    "spawn_error": null
+  },
+  "capture_truncated": false,
+  "source_mode": "explicit"
+}

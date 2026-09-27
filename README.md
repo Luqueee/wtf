@@ -4,9 +4,11 @@ WTF's goal is to explain a failed terminal command **from its captured error out
 
 ## Status
 
-The current CLI renders a compact generic **result** for unfamiliar programs, but does not yet provide generic interpretation of their errors. `wtf -- PROGRAM` captures bounded output; the bare `wtf` shell hook stores bounded, redacted metadata, **not stdout/stderr**, and cannot explain an unseen error message. Cargo, Git, curl, Docker and systemd adapters provide narrow specializations. JSON `schema_version: 1` contains a structured `report`; a later observation alone does not prove the historical cause.
+The CLI produces a generic result for unfamiliar programs. An **opt-in** local GGUF interpreter can suggest a tentative explanation, missing fact and manual next check from bounded redacted output, irrespective of executable name. It does not confirm historical causes, run model-proposed commands, or replace the deterministic fallback. **Do not enable it by default:** the reserved within-project sample found at most 1/7 new supported tentative explanations and 1/7 false MISSING claims; among five informative development failures, both Phi and Qwen treated a deliberately misleading permission message as real. See [the three-model tournament](docs/model-candidates.md), [the frozen protocol](docs/generic-freeze.json), and [all seven reserved paired reports](docs/reserved-evaluation.md). Generalization outside the corpus is not established.
 
-Optional Laya ranks predefined hypotheses after deterministic investigation and has not demonstrated a user-visible advantage over the no-model path. The synthetic curl exit-7 case yielded the same report with and without it; scores from different candidate sets cannot be compared as accuracy. [SPEC §9](SPEC.md#9-autonomous-research-focus) makes the primary development task a vertical slice across **any captured failed command**: local generative interpretation of bounded/redacted evidence, report integration and a family-disjoint paired test. No new adapter is needed to define another diagnosable error. An output-aware normal-terminal workflow is a separate capture problem; do not treat the current metadata-only hook as if it contained the error text.
+A second [fresh six-family paired evaluation](docs/followup-evaluation.md), frozen before execution after the generic-probe/live-capture cutover, found **0/6 supported new explanations or discriminating NEXT**, five invalid model evidence IDs and one misleading distinction between an invalid *date format* and an invalid *calendar value*. `diff` exit 1 exposed a separate gap: the deterministic summary calls a difference a failed command. Neither evaluation supports default model activation.
+
+`wtf -- PROGRAM` captures bounded output; `wtf --live -- PROGRAM` and the opt-in installed `wtfr PROGRAM` additionally show the child's raw output while diagnosing it. Bare `wtf` after the shell hook still retains bounded redacted **metadata only**, not stdout/stderr; it cannot interpret an unseen error message. Cargo, Git, curl, Docker and systemd adapters remain narrow optional evidence specializations, not a requirement for a basic unfamiliar-command report. JSON `schema_version: 1` contains a structured `report`. See [SPEC.md](SPEC.md) for target semantics.
 
 ## Requirements
 
@@ -71,7 +73,7 @@ make report-eval
 ```
 
 It exercises isolated command families with externally established fixture facts, including unfamiliar executables, shell metadata without output, contradictory/unavailable probes, truncation, signal and hostile output. It checks claim provenance and time scope, specific or omitted next steps, a three-row limit, output sanitization, no replay and preserved exit status. Reported coverage and latency describe only those fixtures; a later probe is never an oracle for the original failure. The suite does not contact live services, use a shared Docker daemon or download a model. Real-world readability and next-step utility still need observation with users; the fixture corpus cannot establish those by itself.
-In the current local run: 12 cases across nine fixture families, 8/8 displayed observations matched their recorded execution/probe source, and 3/3 unfamiliar failures received a report (one without original evidence). No NEXT was displayed (0/0 supported); this corpus therefore does **not** establish next-step utility. There were two independently supported confirmations and four bounded read-only probe attempts; the largest default report had two claim rows. Median CLI wall time was 12.156 ms, p95 307.920 ms. These are acceptance-fixture measurements, not real-world accuracy, calibrated probabilities or user-rated usefulness.
+In the current local run: 12 cases across nine fixture families, **11/11** displayed observations matched their recorded execution/probe source, and 3/3 unfamiliar failures received a report (one without original evidence). No NEXT was displayed (0/0 supported); this corpus therefore does **not** establish next-step utility. There were two independently supported confirmations and four bounded read-only probe attempts; the largest default report had **three** claim rows. Median CLI wall time was **12.447 ms**, p95 **311.066 ms**. These are acceptance-fixture measurements, not real-world accuracy, calibrated probabilities or user-rated usefulness.
 Additional local smoke observations used real `false`, `cat` on a missing file and a directory, `git -C` outside a repository, and `curl` to loopback port 1. These are author-controlled failures, **not** a user study or a representative sample of user workflows. They exposed a misleading generic MISSING row when stderr already gave a useful error, and unrelated Git status/diff probes when `git -C` targeted another directory. Both are corrected and covered by regression tests; unrelated working-tree state is no longer presented as evidence for that Git failure. The loopback refusal offered a port-specific NEXT, but its usefulness to another person remains unmeasured.
 
 An opt-in, offline paired evaluation compares the same isolated evidence
@@ -125,11 +127,13 @@ The hook stores bounded, redacted command metadata—not stdout or stderr—and 
 
 Hooks are written to `~/.bashrc`, `${ZDOTDIR:-$HOME}/.zshrc`, or `${XDG_CONFIG_HOME:-$HOME/.config}/fish/conf.d/wtf.fish`. They require the shell's interactive startup configuration and a usable `wtf` executable. Fish's event hook requires an interactive terminal. Multiline and heredoc commands are not recorded. Common credential-like arguments are redacted, but do not rely on redaction for arbitrary secrets.
 
-Shell-mode reconstruction selects an adapter by executable basename, including when the command was recorded with an absolute path. Git, curl, Docker and Linux `systemctl start` use the bounded, fixed-argument probe catalogue when evidence warrants it. Cargo build/check commands are never run as automatic probes: build scripts and procedural macros can change state. The original shell command is never replayed.
+Shell-mode reconstruction can use safe generic checks without requiring an adapter; specialized Git, curl, Docker and Linux `systemctl` adapters may add target-specific bounded observations. Cargo build/check commands are never run as automatic probes: build scripts and procedural macros can change state. The original shell command is never replayed.
 
 For a failed local `curl` connection (including commands using `--noproxy`), WTF can inspect current TCP listeners when `ss` is available. That observation is about the inspection time, not proof of the connection's earlier cause. A plain `curl` failure does not trigger Docker discovery or an automatic NEXT step to identify a service on an arbitrary port; unavailable checks leave the cause unconfirmed.
 
 For a failed `cat` with one literal absolute path, shell mode can run a bounded local `stat` check and report whether that path exists **at inspection time**. It does not establish why `cat` failed earlier; paths with shell expansions, multiple operands, or ambiguous syntax are not checked.
+
+After installation, the opt-in `wtfr PROGRAMA [ARG ...]` function is available in a new Bash, Zsh, or Fish session. Unlike bare `wtf`, it executes that explicit argv **once**, displays the child's stdout/stderr as raw bytes while the child runs, and appends a diagnosis using only bounded, redacted excerpts. It does not intercept other commands or persist their output; the metadata hook ignores `wtfr` to avoid a duplicate recent-failure record. Raw live output is **not redacted** before display; do not use this mode when exposing the program's output to the terminal would be unsafe.
 
 ### Execute and diagnose a command explicitly
 
@@ -137,9 +141,12 @@ For a failed `cat` with one literal absolute path, shell mode can run a bounded 
 wtf -- cargo build
 wtf -- curl http://127.0.0.1:8080
 wtf -- systemctl start example.service  # Executes the requested start; diagnosis only inspects afterward
+wtf --live -- my-tool arg            # Opt-in live output even without shell installation
 ```
 
-WTF executes the program directly, without a shell, captures bounded stdout/stderr and exit status, then builds a short report from the captured result and any eligible current observations. It returns the command's exit status. Captured output is not printed by default, even for success; `--show-output` explicitly prints bounded, redacted, escaped stdout/stderr in execution mode. It cannot recover shell-mode output.
+WTF executes the program directly once without a shell, captures bounded stdout/stderr and exit status, then builds a report from the captured result and eligible current observations. It returns the command's exit status (for a signaled child, conventional `128 + signal`). Captured output is not printed by default, even for success; `--show-output` explicitly prints bounded, redacted, escaped stdout/stderr after execution. `--live` instead forwards raw stdout/stderr while the child runs, retains only bounded excerpts for diagnosis, and cannot be combined with `--json`, `--show-output` or replay. Bare `wtf` cannot recover shell-mode output. Standard input is inherited, but output is piped in both explicit modes: interactive full-screen/TTY programs are not compatible; ordinary binary bytes pass through `--live`, while diagnostic excerpts are decoded lossily. Shell builtins, pipelines, redirects, aliases, expansions and compound commands are not interpreted by `wtfr`; invoke those through a deliberate shell yourself if needed, accepting its own semantics. A command with no general timeout can hang independently of the 30-second model deadline; invoke only commands you intended to run.
+
+Treat `--live`/`wtfr` as **terminal presentation**, not a transparent Unix pipe: the human-readable diagnosis is appended to stdout after the child's bytes. Redirecting or piping it into a binary consumer will contaminate that stream; run the original program directly when exact pipeline output and SIGPIPE semantics matter. Live forwarding cannot redact a child's terminal output or guarantee terminal-style interaction.
 
 ### Output options
 
@@ -150,6 +157,7 @@ wtf --fix
 wtf --no-color
 wtf --model        # opt-in download and local advisory ranking
 wtf --model-dir DIR # opt-in existing local bundle
+wtf --interpreter-model /private/cache/model.gguf --interpreter-runtime /private/cache/llama -- unfamiliar-tool arg
 ```
 
 - Interactive terminals show a compact two-column report: RESULT, OBSERVED, MISSING, NEXT and CHECKS share aligned label and text columns, with color on the status and semantic labels. Plain text uses the same layout; JSON retains its structure. Output excerpts are data, not instructions; current probes are labeled “Now.”
@@ -159,6 +167,15 @@ wtf --model-dir DIR # opt-in existing local bundle
 - `--fix` includes a supported suggestion when one is available; it never applies it.
 - `--no-color` disables color. `NO_COLOR`, non-interactive output, and `TERM=dumb` also render plain text.
 - `--no-model` and `WTF_NO_MODEL=1` suppress inference, including when `--model` was selected.
+
+
+### Generic local interpretation (opt-in)
+
+`--interpreter-model GGUF` uses a **locally installed** llama.cpp unified `llama` executable (`--interpreter-runtime PATH` overrides it). For each invocation WTF starts a local model server on a Unix socket in a private temporary directory, sends a sanitized chat-completion request, then stops that server. No model weights are downloaded at runtime and no inference is sent to a hosted service. The model sees an excerpted version of captured output and up to three safe probe observations, never an executable tool interface. The engine validates JSON, evidence IDs, lengths and some certainty/temporal language; malformed, unavailable or timed-out inference leaves the no-model report unchanged. Redaction is heuristic: do not diagnose commands containing unknown secrets. Inference is opt-in; a model's POSSIBLE is never an OBSERVED historical cause. `--verbose` exposes evidence references and failures; `--json` adds `interpretation` or `interpretation_error` when selected. `--no-model` disables inference. The visible default may contain four rows when output, possibility, missing fact and NEXT are all present.
+
+The interpreter now requests llama.cpp `--device none` for **every** opt-in GGUF, avoiding GPU model offload even for unmeasured weights. The earlier three Q4_K_M GPU peaks below 4 GB were measurements, **not** a hard cap; historical GPU comparisons are kept in [`docs/model-candidates.md`](docs/model-candidates.md). A supported runtime must honor CPU-only execution; this does not cap host RAM, protect against a malicious user-specified runtime, or control VRAM consumed by other processes. CPU-only Phi inference is slower (~9.3 s for a forced 192-token response in one post-freeze measurement). No model is enabled by default.
+
+For reproducing the isolated evaluation, see [laboratory instructions](docs/lab.md) and [evaluation criteria](docs/generic-evaluation.md). `--replay-snapshot` is an internal evaluation switch; it never runs commands/probes, and is evidence-equivalent only for fixtures with zero eligible probes. It is not a normal capture interface.
 
 ### Local decision model (opt-in)
 

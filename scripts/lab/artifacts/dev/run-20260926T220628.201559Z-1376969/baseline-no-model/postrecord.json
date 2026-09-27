@@ -1,0 +1,73 @@
+{
+  "schema_version": 1,
+  "suite": "development",
+  "mode": "no-model visible replay",
+  "model_enabled": false,
+  "cli": "/data/projects/wtf/target/debug/wtf",
+  "created_at_utc": "2026-09-26T22:10:10.670704+00:00",
+  "cases": [
+    {
+      "case_id": "cp-missing-source",
+      "snapshot_sha256": "fcae52eba4164be6b5bb37f5a073036552644fa2a2d0b8bb8411f09a09c399f0",
+      "report": "cp-missing-source.txt",
+      "cli_exit_status": 1,
+      "report_truncated": false
+    },
+    {
+      "case_id": "grep-no-match",
+      "snapshot_sha256": "868d13a3cc1582d19a93c6ca8805e5c53c756f265c01cf7e41a376fdfd5298a3",
+      "report": "grep-no-match.txt",
+      "cli_exit_status": 1,
+      "report_truncated": false
+    },
+    {
+      "case_id": "tar-malformed-archive",
+      "snapshot_sha256": "95bb62e21d45411c791618c7670b35b53332574f08e9e37c431414f14400266f",
+      "report": "tar-malformed-archive.txt",
+      "cli_exit_status": 2,
+      "report_truncated": false
+    },
+    {
+      "case_id": "sed-invalid-expression",
+      "snapshot_sha256": "f422c2a62a98560e82cc8c774a30f9386f965c41f8d7fb953bbe6fcef1c67fa4",
+      "report": "sed-invalid-expression.txt",
+      "cli_exit_status": 1,
+      "report_truncated": false
+    },
+    {
+      "case_id": "git-outside-repository",
+      "snapshot_sha256": "ee2fe244d4bb941f61c0fedb65904a3c76d995af61b51ebe06929cba7e63d6ac",
+      "report": "git-outside-repository.txt",
+      "cli_exit_status": 128,
+      "report_truncated": false
+    },
+    {
+      "case_id": "false-no-diagnostic",
+      "snapshot_sha256": "8189f5c33a17f927ebf4aa58feb06b75496350e49ee2106227e81a0035ffe9ca",
+      "report": "false-no-diagnostic.txt",
+      "cli_exit_status": 1,
+      "report_truncated": false
+    },
+    {
+      "case_id": "untrusted-misleading-diagnostic",
+      "snapshot_sha256": "cb9b11d8566698c3a8bd23a7f8c229d1adb6f412977c58618ad116bf6af24d34",
+      "report": "untrusted-misleading-diagnostic.txt",
+      "cli_exit_status": 37,
+      "report_truncated": false
+    },
+    {
+      "case_id": "long-successful-output",
+      "snapshot_sha256": "9381f13ec729df5650bcf4c582894983284eff9d3764dfabadbc12c9f6981866",
+      "report": "long-successful-output.txt",
+      "cli_exit_status": 0,
+      "report_truncated": false
+    },
+    {
+      "case_id": "wall-timeout-sleep",
+      "snapshot_sha256": "dbda4d44359af12d4dae4a89e5740bdceefc4af30eac855ba0283e6988c6f5d0",
+      "report": "wall-timeout-sleep.txt",
+      "cli_exit_status": 137,
+      "report_truncated": false
+    }
+  ]
+}

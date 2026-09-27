@@ -1,0 +1,6 @@
+✗  env  127
+   RESULT    Reported: File does not exist.
+   OBSERVED  env=[REDACTED] 'lab-command-that-does-not-exist': No such file or directory
+   POSSIBLE  May be: The 'lab-command-that-does-not-exist' is not found in the PATH or is misspelled.
+   MISSING   The actual command name that failed.
+   NEXT      Verify the spelling of the command and check if it exists in the PATH.

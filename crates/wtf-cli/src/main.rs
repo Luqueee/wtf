@@ -2,11 +2,15 @@ use std::io::IsTerminal;
 use std::process::ExitCode;
 
 use clap::{Parser, Subcommand};
-use wtf_core::capture::{execute_command_with_capture, CommandExecution, ExecutionConfig};
+use wtf_core::capture::{
+    execute_command_with_capture, execute_command_with_live_capture, CommandExecution,
+    ExecutionConfig,
+};
 use wtf_core::diagnosis::{Diagnosis, DiagnosisEngine, DiagnosisStatus};
 use wtf_core::investigation::{Investigation, InvestigationEngine};
 use wtf_core::probes::LocalProbeRunner;
 
+mod interpreter;
 mod model;
 mod model_cache;
 mod report;
@@ -32,6 +36,9 @@ struct Cli {
     /// Print bounded, escaped and redacted captured stdout/stderr
     #[arg(long)]
     show_output: bool,
+    /// Show the command's stdout/stderr live while retaining bounded diagnostic excerpts
+    #[arg(long, conflicts_with_all = ["show_output", "json", "replay_snapshot"])]
+    live: bool,
 
     /// Include suggested fix/remedy in diagnosis output
     #[arg(long)]
@@ -50,6 +57,17 @@ struct Cli {
     /// Disable local model inference even if a bundle is selected
     #[arg(long)]
     no_model: bool,
+    /// Opt into generic local GGUF interpretation; no weights are downloaded
+    #[arg(long, value_name = "GGUF", conflicts_with_all = ["model", "model_dir"])]
+    interpreter_model: Option<std::path::PathBuf>,
+
+    /// Path to local llama.cpp unified executable (defaults to llama on PATH)
+    #[arg(long, value_name = "PATH")]
+    interpreter_runtime: Option<std::path::PathBuf>,
+
+    /// Evaluation-only evidence replay; never executes the command or probes
+    #[arg(long, hide = true, value_name = "SNAPSHOT")]
+    replay_snapshot: Option<std::path::PathBuf>,
 
     /// Command and arguments to execute and diagnose
     #[arg(last = true)]
@@ -102,11 +120,36 @@ fn main() -> ExitCode {
         }
         None => {}
     }
+    if cli.live && cli.command.is_empty() {
+        eprintln!("--live requires an explicit command after --");
+        return ExitCode::from(2);
+    }
 
-    let explicit_command = !cli.command.is_empty();
-    let (execution, capture_truncated) = if explicit_command {
+    let explicit_command = !cli.command.is_empty() || cli.replay_snapshot.is_some();
+    let (execution, capture_truncated) = if let Some(path) = &cli.replay_snapshot {
+        #[derive(serde::Deserialize)]
+        struct Snapshot {
+            execution: CommandExecution,
+            capture_truncated: bool,
+        }
+        let snapshot: Snapshot = match std::fs::read(path)
+            .ok()
+            .and_then(|bytes| serde_json::from_slice(&bytes).ok())
+        {
+            Some(snapshot) => snapshot,
+            None => {
+                eprintln!("Invalid local replay snapshot.");
+                return ExitCode::from(1);
+            }
+        };
+        (snapshot.execution, snapshot.capture_truncated)
+    } else if !cli.command.is_empty() {
         let cmd = &cli.command[0];
-        execute_command_with_capture(cmd, &cli.command[1..], &ExecutionConfig::default())
+        if cli.live {
+            execute_command_with_live_capture(cmd, &cli.command[1..], &ExecutionConfig::default())
+        } else {
+            execute_command_with_capture(cmd, &cli.command[1..], &ExecutionConfig::default())
+        }
     } else if let Some(execution) = shell_state::load_recent() {
         (execution, false)
     } else {
@@ -120,7 +163,11 @@ fn main() -> ExitCode {
         eprint!("{stderr}");
     }
 
-    let (diagnosis, investigation) = diagnose(&execution);
+    let (diagnosis, investigation) = if cli.replay_snapshot.is_some() {
+        (DiagnosisEngine::new().diagnose(&execution), None)
+    } else {
+        diagnose(&execution)
+    };
     let no_model = cli.no_model || std::env::var("WTF_NO_MODEL").as_deref() == Ok("1");
     let model_result = ((cli.model || cli.model_dir.is_some()) && !no_model).then(|| {
         investigation.as_ref().map_or(Ok(None), |investigation| {
@@ -131,7 +178,7 @@ fn main() -> ExitCode {
             }
         })
     });
-    let report = report::Report::build(
+    let mut report = report::Report::build(
         &execution,
         &diagnosis,
         investigation.as_ref(),
@@ -143,18 +190,40 @@ fn main() -> ExitCode {
         cli.fix,
         capture_truncated,
     );
+    let interpretation = cli
+        .interpreter_model
+        .as_ref()
+        .filter(|_| !no_model && !execution.is_success())
+        .map(|model| {
+            let runtime = cli
+                .interpreter_runtime
+                .as_deref()
+                .unwrap_or_else(|| std::path::Path::new("llama"));
+            interpreter::infer(
+                runtime,
+                model,
+                &execution,
+                investigation.as_ref(),
+                capture_truncated,
+            )
+        });
+    if let Some(Ok(value)) = &interpretation {
+        report.add_interpretation(value);
+    }
     render_result(
         &execution,
         &diagnosis,
         investigation.as_ref(),
         model_result.as_ref(),
         &report,
+        interpretation.as_ref(),
         &cli,
     );
 
-    match diagnosis.exit_status.code {
-        Some(code) => ExitCode::from((code & 0xFF) as u8),
-        None => ExitCode::from(1),
+    match (diagnosis.exit_status.code, diagnosis.exit_status.signal) {
+        (Some(code), _) => ExitCode::from((code & 0xFF) as u8),
+        (None, Some(signal)) => ExitCode::from(((128 + signal) & 0xFF) as u8),
+        _ => ExitCode::from(1),
     }
 }
 
@@ -192,6 +261,7 @@ fn render_result(
     investigation: Option<&Investigation>,
     model_result: Option<&Result<Option<model::ModelDecision>, String>>,
     report: &report::Report,
+    interpretation: Option<&Result<interpreter::Interpretation, String>>,
     cli: &Cli,
 ) {
     if cli.json {
@@ -206,8 +276,11 @@ fn render_result(
             model_decision: Option<&'a model::ModelDecision>,
             #[serde(skip_serializing_if = "Option::is_none")]
             model_error: Option<&'a str>,
+            #[serde(skip_serializing_if = "Option::is_none")]
+            interpretation: Option<&'a interpreter::Interpretation>,
+            #[serde(skip_serializing_if = "Option::is_none")]
+            interpretation_error: Option<&'a str>,
         }
-
         let output = JsonOutput {
             schema_version: 1,
             report,
@@ -215,6 +288,9 @@ fn render_result(
             investigation,
             model_decision: model_result.and_then(|result| result.as_ref().ok()?.as_ref()),
             model_error: model_result.and_then(|result| result.as_ref().err().map(String::as_str)),
+            interpretation: interpretation.and_then(|result| result.as_ref().ok()),
+            interpretation_error: interpretation
+                .and_then(|result| result.as_ref().err().map(String::as_str)),
         };
         match serde_json::to_value(&output) {
             Ok(mut value) => {
@@ -237,6 +313,11 @@ fn render_result(
         "{}",
         report.render(use_color, cli.verbose, execution, investigation)
     );
+    if cli.verbose {
+        if let Some(Err(error)) = interpretation {
+            eprintln!("Local interpretation unavailable: {error}");
+        }
+    }
     if cli.verbose {
         if let Some(result) = model_result {
             match result {

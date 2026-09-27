@@ -1,0 +1,55 @@
+{
+  "category": "unknown",
+  "command": "/usr/bin/diff -- before.txt after.txt",
+  "detection": null,
+  "duration": {
+    "nanos": 1631080,
+    "secs": 0
+  },
+  "entities": {
+    "containers": [],
+    "paths": [],
+    "ports": [],
+    "processes": [
+      "diff"
+    ],
+    "services": []
+  },
+  "evidence": [],
+  "exit_status": {
+    "code": 1,
+    "signal": null
+  },
+  "interpretation_error": "invalid evidence reference: unix_1790501227",
+  "investigation": null,
+  "normalized": {
+    "clean_stderr": "",
+    "clean_stdout": "1c1\n< first\n---\n> second\n\n",
+    "collapsed_count": 0,
+    "relevant_lines": []
+  },
+  "remedy": null,
+  "report": {
+    "capture": "captured",
+    "captured_at": 1790501227,
+    "checks": 0,
+    "claims": [
+      {
+        "kind": "observed",
+        "source": {
+          "field": "stdout",
+          "type": "execution"
+        },
+        "text": "1c1"
+      }
+    ],
+    "command_label": "diff",
+    "outcome": "1",
+    "reported_at": 1790501253,
+    "source_mode": "explicit",
+    "summary": "Command failed: exit code 1."
+  },
+  "schema_version": 1,
+  "status": "Unknown",
+  "summary": "Command failed with exit code 1."
+}

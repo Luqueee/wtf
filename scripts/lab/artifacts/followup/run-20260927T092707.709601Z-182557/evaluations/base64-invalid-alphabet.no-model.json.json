@@ -1,0 +1,58 @@
+{
+  "category": "unknown",
+  "command": "/usr/bin/base64 --decode encoded.txt",
+  "detection": null,
+  "duration": {
+    "nanos": 30188845,
+    "secs": 0
+  },
+  "entities": {
+    "containers": [],
+    "paths": [],
+    "ports": [],
+    "processes": [
+      "base64"
+    ],
+    "services": []
+  },
+  "evidence": [
+    "base64: invalid input"
+  ],
+  "exit_status": {
+    "code": 1,
+    "signal": null
+  },
+  "investigation": null,
+  "normalized": {
+    "clean_stderr": "base64: invalid input\n\n",
+    "clean_stdout": "��",
+    "collapsed_count": 0,
+    "relevant_lines": [
+      "base64: invalid input"
+    ]
+  },
+  "remedy": null,
+  "report": {
+    "capture": "captured",
+    "captured_at": 1790501227,
+    "checks": 0,
+    "claims": [
+      {
+        "kind": "observed",
+        "source": {
+          "field": "stderr",
+          "type": "execution"
+        },
+        "text": "base64: invalid input"
+      }
+    ],
+    "command_label": "base64",
+    "outcome": "1",
+    "reported_at": 1790501233,
+    "source_mode": "explicit",
+    "summary": "Command failed: exit code 1."
+  },
+  "schema_version": 1,
+  "status": "Unknown",
+  "summary": "Command failed with exit code 1."
+}

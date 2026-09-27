@@ -1,4 +1,4 @@
-use std::io::{self, Read};
+use std::io::{self, Read, Write};
 use std::path::PathBuf;
 use std::process::{Command, Stdio};
 use std::thread;
@@ -99,9 +99,32 @@ pub fn drain_stream_bounded<R: Read + Send + 'static>(
 }
 
 fn drain_stream_with_truncation<R: Read + Send + 'static>(
-    mut reader: R,
+    reader: R,
     max_bytes: usize,
 ) -> io::Result<(String, bool)> {
+    drain_stream_with_truncation_while(reader, max_bytes, |_| Ok(()))
+}
+
+fn drain_stream_with_truncation_to_writer<R: Read + Send + 'static, W: Write>(
+    reader: R,
+    max_bytes: usize,
+    writer: &mut W,
+) -> io::Result<(String, bool)> {
+    drain_stream_with_truncation_while(reader, max_bytes, |bytes| {
+        writer.write_all(bytes)?;
+        writer.flush()
+    })
+}
+
+fn drain_stream_with_truncation_while<R, F>(
+    mut reader: R,
+    max_bytes: usize,
+    mut forward: F,
+) -> io::Result<(String, bool)>
+where
+    R: Read + Send + 'static,
+    F: FnMut(&[u8]) -> io::Result<()>,
+{
     let mut total_bytes = 0usize;
     let head_limit = max_bytes / 4;
     let tail_limit = max_bytes.saturating_sub(head_limit);
@@ -116,6 +139,11 @@ fn drain_stream_with_truncation<R: Read + Send + 'static>(
             break;
         }
         total_bytes += n;
+
+        // A broken destination should close the read end of the child pipe.
+        // Otherwise a pipeline consumer can exit while the child keeps running
+        // indefinitely instead of observing its ordinary broken-pipe failure.
+        forward(&buf[..n])?;
 
         let chunk = &buf[..n];
         if head.len() < head_limit {
@@ -132,7 +160,6 @@ fn drain_stream_with_truncation<R: Read + Send + 'static>(
     }
 
     if total_bytes <= max_bytes {
-        // Everything fit without truncation
         let mut all_bytes = head;
         all_bytes.extend_from_slice(&ring.into_vec());
         Ok((String::from_utf8_lossy(&all_bytes).into_owned(), false))
@@ -224,12 +251,49 @@ pub fn execute_command_with_capture(
     args: &[String],
     config: &ExecutionConfig,
 ) -> (CommandExecution, bool) {
+    execute_command_with_capture_and_output(
+        command,
+        args,
+        config,
+        None::<io::Sink>,
+        None::<io::Sink>,
+    )
+}
+
+/// Executes the command once, forwarding raw stdout and stderr bytes as they arrive while
+/// retaining bounded excerpts for diagnosis.
+pub fn execute_command_with_live_capture(
+    command: &str,
+    args: &[String],
+    config: &ExecutionConfig,
+) -> (CommandExecution, bool) {
+    execute_command_with_capture_and_output(
+        command,
+        args,
+        config,
+        Some(io::stdout()),
+        Some(io::stderr()),
+    )
+}
+
+fn execute_command_with_capture_and_output<StdoutWriter, StderrWriter>(
+    command: &str,
+    args: &[String],
+    config: &ExecutionConfig,
+    stdout_output: Option<StdoutWriter>,
+    stderr_output: Option<StderrWriter>,
+) -> (CommandExecution, bool)
+where
+    StdoutWriter: Write + Send + 'static,
+    StderrWriter: Write + Send + 'static,
+{
     let start_time = Instant::now();
     let timestamp = SystemTime::now();
 
     let mut cmd = Command::new(command);
     cmd.args(args);
     cmd.current_dir(&config.cwd);
+    cmd.stdin(Stdio::inherit());
     cmd.stdout(Stdio::piped());
     cmd.stderr(Stdio::piped());
 
@@ -268,21 +332,31 @@ pub fn execute_command_with_capture(
     let max_stream_bytes = config.max_stream_bytes;
 
     let stdout_thread = thread::spawn(move || {
-        if let Some(reader) = stdout_handle {
-            drain_stream_with_truncation(reader, max_stream_bytes)
-                .unwrap_or_else(|e| (format!("<error reading stdout: {e}>"), false))
+        let output = if let Some(reader) = stdout_handle {
+            match stdout_output {
+                Some(mut writer) => {
+                    drain_stream_with_truncation_to_writer(reader, max_stream_bytes, &mut writer)
+                }
+                None => drain_stream_with_truncation(reader, max_stream_bytes),
+            }
         } else {
-            (String::new(), false)
-        }
+            Ok((String::new(), false))
+        };
+        output.unwrap_or_else(|e| (format!("<error reading stdout: {e}>"), false))
     });
 
     let stderr_thread = thread::spawn(move || {
-        if let Some(reader) = stderr_handle {
-            drain_stream_with_truncation(reader, max_stream_bytes)
-                .unwrap_or_else(|e| (format!("<error reading stderr: {e}>"), false))
+        let output = if let Some(reader) = stderr_handle {
+            match stderr_output {
+                Some(mut writer) => {
+                    drain_stream_with_truncation_to_writer(reader, max_stream_bytes, &mut writer)
+                }
+                None => drain_stream_with_truncation(reader, max_stream_bytes),
+            }
         } else {
-            (String::new(), false)
-        }
+            Ok((String::new(), false))
+        };
+        output.unwrap_or_else(|e| (format!("<error reading stderr: {e}>"), false))
     });
 
     let wait_res = child.wait();
@@ -338,7 +412,30 @@ pub fn execute_command_with_capture(
 #[cfg(test)]
 mod tests {
     use super::*;
-    use std::io::Cursor;
+    use std::io::{self, Cursor, Write};
+    use std::path::PathBuf;
+    use std::sync::mpsc::{self, Sender};
+
+    struct CapturedOutput {
+        sender: Sender<Vec<u8>>,
+        signal_on_flush: Option<PathBuf>,
+    }
+
+    impl Write for CapturedOutput {
+        fn write(&mut self, bytes: &[u8]) -> io::Result<usize> {
+            self.sender
+                .send(bytes.to_vec())
+                .map_err(|error| io::Error::new(io::ErrorKind::BrokenPipe, error.to_string()))?;
+            Ok(bytes.len())
+        }
+
+        fn flush(&mut self) -> io::Result<()> {
+            if let Some(path) = self.signal_on_flush.take() {
+                std::fs::write(path, b"forwarded")?;
+            }
+            Ok(())
+        }
+    }
 
     #[test]
     fn test_drain_stream_within_limit() {
@@ -411,5 +508,64 @@ mod tests {
         let exec = execute_command("sh", &args, &config);
         assert!(exec.stdout.contains("bytes omitted") || exec.stdout.contains("out"));
         assert!(exec.stderr.contains("bytes omitted") || exec.stderr.contains("err"));
+    }
+
+    #[test]
+    fn live_capture_streams_both_raw_outputs_once_and_bounds_diagnosis() {
+        let dir = tempfile::tempdir().unwrap();
+        let config = ExecutionConfig {
+            cwd: dir.path().to_path_buf(),
+            max_stream_bytes: 8,
+        };
+        let (stdout_sender, stdout_receiver) = mpsc::channel();
+        let (stderr_sender, stderr_receiver) = mpsc::channel();
+        let stdout_writer = CapturedOutput {
+            sender: stdout_sender,
+            signal_on_flush: Some(dir.path().join("forwarded")),
+        };
+        let stderr_writer = CapturedOutput {
+            sender: stderr_sender,
+            signal_on_flush: None,
+        };
+        let script = "printf 'stdout\\000once'; printf 'stderr\\377once' >&2; attempts=0; while [ ! -e forwarded ] && [ \"$attempts\" -lt 100 ]; do sleep 0.01; attempts=$((attempts + 1)); done; if [ -e forwarded ]; then exit 23; else exit 24; fi";
+        let args = vec!["-c".to_owned(), script.to_owned()];
+
+        let (execution, truncated) = execute_command_with_capture_and_output(
+            "sh",
+            &args,
+            &config,
+            Some(stdout_writer),
+            Some(stderr_writer),
+        );
+
+        assert_eq!(execution.command, "sh");
+        assert_eq!(execution.args, args);
+        assert_eq!(execution.exit_code(), Some(23));
+        assert_eq!(execution.exit_status.signal(), None);
+        assert!(execution.spawn_error.is_none());
+        assert!(truncated);
+        let stdout_bytes = stdout_receiver.try_iter().flatten().collect::<Vec<_>>();
+        let stderr_bytes = stderr_receiver.try_iter().flatten().collect::<Vec<_>>();
+        assert_eq!(stdout_bytes.as_slice(), b"stdout\0once");
+        assert_eq!(stderr_bytes.as_slice(), b"stderr\xffonce");
+        assert!(execution.stdout.contains("bytes omitted"));
+        assert!(execution.stdout.starts_with("st"));
+        assert!(execution.stdout.ends_with("once"));
+        assert!(execution.stderr.contains("bytes omitted"));
+        assert!(execution.stderr.starts_with("st"));
+        assert!(execution.stderr.ends_with("once"));
+    }
+
+    #[cfg(unix)]
+    #[test]
+    fn live_capture_preserves_signal_termination() {
+        let args = vec!["-c".to_owned(), "kill -TERM $$".to_owned()];
+        let (execution, truncated) =
+            execute_command_with_live_capture("sh", &args, &ExecutionConfig::default());
+
+        assert_eq!(execution.exit_code(), None);
+        assert_eq!(execution.exit_status.signal(), Some(15));
+        assert!(execution.spawn_error.is_none());
+        assert!(!truncated);
     }
 }

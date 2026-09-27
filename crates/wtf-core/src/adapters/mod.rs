@@ -78,15 +78,23 @@ pub struct AdapterContext<'a, R> {
 
 impl<'a, R: ProbeRunner> AdapterContext<'a, R> {
     pub fn new(runner: &'a R, cwd: &'a Path, max_probes: usize, duration: Duration) -> Self {
+        Self::with_deadline(runner, cwd, max_probes, Instant::now() + duration)
+    }
+
+    pub(crate) fn with_deadline(
+        runner: &'a R,
+        cwd: &'a Path,
+        max_probes: usize,
+        deadline: Instant,
+    ) -> Self {
         Self {
             runner,
             cwd,
             max_probes,
-            deadline: Instant::now() + duration,
+            deadline,
             attempts: Vec::new(),
         }
     }
-
     /// A closed probe catalogue enforces program/argv, timeout, and output bounds.
     pub fn run(&mut self, id: ProbeId, target: Option<&str>) -> Option<ProbeOutput> {
         if self.attempts.len() >= self.max_probes || Instant::now() >= self.deadline {
