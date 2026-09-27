@@ -1,0 +1,6 @@
+?  sort  1
+   RESULT    Command result: exit code 1.
+   OBSERVED  /usr/bin/sort: input.txt:2: disorder: alpha
+   POSSIBLE  May be: sort command failed due to an invalid character in the input file
+   MISSING   exact character causing the error
+   NEXT      verify the contents of input.txt for non-sortable characters

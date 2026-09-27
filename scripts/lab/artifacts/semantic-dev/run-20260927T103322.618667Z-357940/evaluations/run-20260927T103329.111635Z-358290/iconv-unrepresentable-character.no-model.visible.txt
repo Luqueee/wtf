@@ -1,0 +1,3 @@
+?  iconv  1
+   RESULT    Command result: exit code 1.
+   OBSERVED  /usr/bin/iconv: illegal input sequence at position 3

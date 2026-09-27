@@ -1,0 +1,6 @@
+?  iconv  1
+   RESULT    Command result: exit code 1.
+   OBSERVED  /usr/bin/iconv: illegal input sequence at position 3
+   POSSIBLE  May be: iconv expects a valid character encoding conversion, but received an illegal input sequence
+   MISSING   specific character encoding details
+   NEXT      verify the input character encoding

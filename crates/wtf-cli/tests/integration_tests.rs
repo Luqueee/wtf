@@ -96,6 +96,7 @@ fn diff_exit_one_reports_differences_without_claiming_failure() {
     let json: serde_json::Value = serde_json::from_slice(&output.stdout).unwrap();
     assert_eq!(json["report"]["outcome"], "1");
     assert_eq!(json["report"]["summary"], "Command result: exit code 1.");
+    assert_eq!(json["summary"], json["report"]["summary"]);
     assert_eq!(json["report"]["claims"][0]["source"]["field"], "stdout");
     assert!(json["report"]["claims"][0]["text"]
         .as_str()
@@ -192,6 +193,7 @@ fn shell_record_discloses_missing_output_without_replaying_failed_action() {
         json["report"]["summary"],
         "Recent command result: exit code 23; original output unavailable."
     );
+    assert_eq!(json["summary"], "Command result: exit code 23.");
     assert!(json["report"]["claims"]
         .as_array()
         .unwrap()

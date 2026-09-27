@@ -130,7 +130,7 @@ impl DiagnosisEngine {
                 normalized,
             }
         } else {
-            // No detector matched, but command failed
+            // A nonzero status is not necessarily a failed operation (e.g. diff found changes).
             let evidence = if !normalized.relevant_lines.is_empty() {
                 normalized.relevant_lines.clone()
             } else if !execution.stderr.trim().is_empty() {
@@ -144,7 +144,7 @@ impl DiagnosisEngine {
                 Vec::new()
             };
 
-            let summary = format!("Command failed with {}.", execution.exit_status.display());
+            let summary = format!("Command result: {}.", execution.exit_status.display());
 
             Diagnosis {
                 status: DiagnosisStatus::Unknown,

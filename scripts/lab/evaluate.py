@@ -56,8 +56,8 @@ def validate_run(run_path: Path, allow_reserved: bool) -> tuple[Path, str, dict[
         raise EvaluationError("postrecord must not be a symlink")
     postrecord = load_json(post_path)
     suite = postrecord.get("suite")
-    if suite not in {"dev", "reserved"} or run_dir.parent.name != suite:
-        raise EvaluationError("run directory must be a dev or reserved lab run")
+    if suite not in {"dev", "semantic-dev", "reserved"} or run_dir.parent.name != suite:
+        raise EvaluationError("run directory must be a dev, semantic-dev or reserved lab run")
     if suite == "reserved" and not allow_reserved:
         raise EvaluationError("reserved replay requires the explicit --allow-reserved flag after configuration freeze")
     try:

@@ -1,0 +1,96 @@
+{
+  "category": "unknown",
+  "command": "/usr/bin/sha256sum --check checksums.txt",
+  "detection": null,
+  "duration": {
+    "nanos": 2093711,
+    "secs": 0
+  },
+  "entities": {
+    "containers": [],
+    "paths": [],
+    "ports": [],
+    "processes": [
+      "sha256sum"
+    ],
+    "services": []
+  },
+  "evidence": [
+    "sha256sum: WARNING: 1 computed checksum did NOT match"
+  ],
+  "exit_status": {
+    "code": 1,
+    "signal": null
+  },
+  "interpretation": {
+    "evidence_ids": [
+      "stdout",
+      "stderr"
+    ],
+    "missing": "input file checksum",
+    "next": "verify input file integrity",
+    "possible": "sha256sum command failed due to incorrect checksum computation"
+  },
+  "investigation": null,
+  "normalized": {
+    "clean_stderr": "sha256sum: WARNING: 1 computed checksum did NOT match\n\n",
+    "clean_stdout": "input.txt: FAILED\n\n",
+    "collapsed_count": 0,
+    "relevant_lines": [
+      "sha256sum: WARNING: 1 computed checksum did NOT match"
+    ]
+  },
+  "remedy": null,
+  "report": {
+    "capture": "captured",
+    "captured_at": 1790505202,
+    "checks": 0,
+    "claims": [
+      {
+        "kind": "observed",
+        "source": {
+          "field": "stderr",
+          "type": "execution"
+        },
+        "text": "sha256sum: WARNING: 1 computed checksum did NOT match"
+      },
+      {
+        "kind": "possible",
+        "source": {
+          "evidence_ids": [
+            "stdout",
+            "stderr"
+          ],
+          "type": "model"
+        },
+        "text": "May be: sha256sum command failed due to incorrect checksum computation"
+      },
+      {
+        "kind": "missing",
+        "source": {
+          "evidence_ids": [
+            "stdout",
+            "stderr"
+          ],
+          "type": "model"
+        },
+        "text": "input file checksum"
+      },
+      {
+        "kind": "next",
+        "source": {
+          "type": "suggestion"
+        },
+        "text": "verify input file integrity"
+      }
+    ],
+    "command_label": "sha256sum",
+    "outcome": "1",
+    "reported_at": 1790505222,
+    "source_mode": "explicit",
+    "summary": "Command result: exit code 1."
+  },
+  "schema_version": 1,
+  "status": "Unknown",
+  "summary": "Command result: exit code 1."
+}

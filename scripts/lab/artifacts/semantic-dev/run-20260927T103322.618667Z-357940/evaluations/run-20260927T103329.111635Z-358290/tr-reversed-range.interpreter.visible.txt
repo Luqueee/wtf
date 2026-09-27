@@ -1,0 +1,5 @@
+?  tr  1
+   RESULT    Command result: exit code 1.
+   OBSERVED  tr: range-endpoints of 'z-a' are in reverse collating sequence order
+   POSSIBLE  May be: tr command failed due to incorrect range-endpoints order
+   NEXT      Verify correct range-endpoints order for tr command

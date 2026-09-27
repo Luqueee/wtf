@@ -1,0 +1,2 @@
+✓  sort  0
+   RESULT    Command completed successfully.

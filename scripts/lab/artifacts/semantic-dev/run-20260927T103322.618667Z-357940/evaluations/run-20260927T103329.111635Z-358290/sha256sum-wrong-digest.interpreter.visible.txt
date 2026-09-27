@@ -1,0 +1,6 @@
+?  sha256sum  1
+   RESULT    Command result: exit code 1.
+   OBSERVED  sha256sum: WARNING: 1 computed checksum did NOT match
+   POSSIBLE  May be: sha256sum command failed due to incorrect checksum computation
+   MISSING   input file checksum
+   NEXT      verify input file integrity

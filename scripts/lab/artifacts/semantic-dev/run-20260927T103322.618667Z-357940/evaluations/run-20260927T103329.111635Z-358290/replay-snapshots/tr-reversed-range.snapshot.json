@@ -1,0 +1,27 @@
+{
+  "execution": {
+    "command": "/usr/bin/tr",
+    "args": [
+      "z-a",
+      "a-z"
+    ],
+    "cwd": "<LAB_TMP>",
+    "exit_status": {
+      "code": 1,
+      "signal": null
+    },
+    "stdout": "",
+    "stderr": "tr: range-endpoints of 'z-a' are in reverse collating sequence order\n",
+    "duration": {
+      "secs": 0,
+      "nanos": 1726291
+    },
+    "timestamp": {
+      "secs_since_epoch": 1790505202,
+      "nanos_since_epoch": 625799723
+    },
+    "spawn_error": null
+  },
+  "capture_truncated": false,
+  "source_mode": "explicit"
+}

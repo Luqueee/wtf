@@ -1,0 +1,141 @@
+{
+  "schema_version": 1,
+  "suite": "semantic-dev",
+  "manifest_sha256": "49700a22be7729a4748204c6f3e8c74061f23021385555d85877c19aec09bd7b",
+  "oracle_sha256": "3be918a3fe4c4a0aca652b8f0e8189237b610b4af9a9de28d0d51b743c11c752",
+  "run_id": "run-20260927T103322.618667Z-357940",
+  "launch_attempts_total": 5,
+  "reserved_cases_executed": 0,
+  "resource_limits": {
+    "cpu_seconds_soft": 3,
+    "cpu_seconds_hard": 4,
+    "address_space_bytes": 536870912,
+    "file_size_bytes": 8388608,
+    "open_files": 64,
+    "core_dumps": 0
+  },
+  "capture_limit_bytes_per_stream": 4096,
+  "cleanup": "case tempdirs removed by TemporaryDirectory before postrecord write",
+  "cases": [
+    {
+      "case_id": "sort-disordered-input",
+      "family": "ordering-check",
+      "program": "sort",
+      "launch_attempts": 1,
+      "timed_out": false,
+      "exit_status": {
+        "code": 1,
+        "signal": null
+      },
+      "spawn_error": false,
+      "truncated_streams": [],
+      "observed_output_bytes": {
+        "stdout": 0,
+        "stderr": 44
+      },
+      "duration": {
+        "secs": 0,
+        "nanos": 1408891
+      },
+      "snapshot": "sort-disordered-input.snapshot.json",
+      "snapshot_sha256": "4636b951fa8afc0fd3d477d4b0e7449d29ff506563454404e5c0003f04721f08",
+      "oracle_status_match": true
+    },
+    {
+      "case_id": "sha256sum-wrong-digest",
+      "family": "checksum-verification",
+      "program": "sha256sum",
+      "launch_attempts": 1,
+      "timed_out": false,
+      "exit_status": {
+        "code": 1,
+        "signal": null
+      },
+      "spawn_error": false,
+      "truncated_streams": [],
+      "observed_output_bytes": {
+        "stdout": 18,
+        "stderr": 54
+      },
+      "duration": {
+        "secs": 0,
+        "nanos": 2093711
+      },
+      "snapshot": "sha256sum-wrong-digest.snapshot.json",
+      "snapshot_sha256": "2ad0686706f6da86f09214180229e1313fd7df5d5aaffa4ca4336040bd2794e6",
+      "oracle_status_match": true
+    },
+    {
+      "case_id": "iconv-unrepresentable-character",
+      "family": "charset-conversion",
+      "program": "iconv",
+      "launch_attempts": 1,
+      "timed_out": false,
+      "exit_status": {
+        "code": 1,
+        "signal": null
+      },
+      "spawn_error": false,
+      "truncated_streams": [],
+      "observed_output_bytes": {
+        "stdout": 3,
+        "stderr": 53
+      },
+      "duration": {
+        "secs": 0,
+        "nanos": 2352301
+      },
+      "snapshot": "iconv-unrepresentable-character.snapshot.json",
+      "snapshot_sha256": "b8c8334b5dcbd381390e4a1f9713e565fc8f80203444ad7703ff24b8c7b1f18e",
+      "oracle_status_match": true
+    },
+    {
+      "case_id": "tr-reversed-range",
+      "family": "character-range-parse",
+      "program": "tr",
+      "launch_attempts": 1,
+      "timed_out": false,
+      "exit_status": {
+        "code": 1,
+        "signal": null
+      },
+      "spawn_error": false,
+      "truncated_streams": [],
+      "observed_output_bytes": {
+        "stdout": 0,
+        "stderr": 69
+      },
+      "duration": {
+        "secs": 0,
+        "nanos": 1726291
+      },
+      "snapshot": "tr-reversed-range.snapshot.json",
+      "snapshot_sha256": "ab7b5c65f7a1ac032530b5c4e4c00c87af64a543c1477fb341e4d56268497ebb",
+      "oracle_status_match": true
+    },
+    {
+      "case_id": "sort-ordered-control",
+      "family": "ordering-check",
+      "program": "sort",
+      "launch_attempts": 1,
+      "timed_out": false,
+      "exit_status": {
+        "code": 0,
+        "signal": null
+      },
+      "spawn_error": false,
+      "truncated_streams": [],
+      "observed_output_bytes": {
+        "stdout": 0,
+        "stderr": 0
+      },
+      "duration": {
+        "secs": 0,
+        "nanos": 670761
+      },
+      "snapshot": "sort-ordered-control.snapshot.json",
+      "snapshot_sha256": "0a662e95df6f75e549192b4e1c5126c8a9350c5e002a51742619c913cfa2a666",
+      "oracle_status_match": true
+    }
+  ]
+}

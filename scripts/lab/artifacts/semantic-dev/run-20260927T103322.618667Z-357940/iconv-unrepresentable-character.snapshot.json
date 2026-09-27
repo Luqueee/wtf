@@ -1,0 +1,28 @@
+{
+  "execution": {
+    "command": "/usr/bin/iconv",
+    "args": [
+      "--from-code=UTF-8",
+      "--to-code=ASCII",
+      "input.txt"
+    ],
+    "cwd": "<LAB_TMP>",
+    "exit_status": {
+      "code": 1,
+      "signal": null
+    },
+    "stdout": "caf",
+    "stderr": "/usr/bin/iconv: illegal input sequence at position 3\n",
+    "duration": {
+      "secs": 0,
+      "nanos": 2352301
+    },
+    "timestamp": {
+      "secs_since_epoch": 1790505202,
+      "nanos_since_epoch": 623248292
+    },
+    "spawn_error": null
+  },
+  "capture_truncated": false,
+  "source_mode": "explicit"
+}

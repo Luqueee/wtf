@@ -1,0 +1,83 @@
+{
+  "category": "unknown",
+  "command": "/usr/bin/tr z-a a-z",
+  "detection": null,
+  "duration": {
+    "nanos": 1726291,
+    "secs": 0
+  },
+  "entities": {
+    "containers": [],
+    "paths": [],
+    "ports": [],
+    "processes": [
+      "tr"
+    ],
+    "services": []
+  },
+  "evidence": [
+    "tr: range-endpoints of 'z-a' are in reverse collating sequence order"
+  ],
+  "exit_status": {
+    "code": 1,
+    "signal": null
+  },
+  "interpretation": {
+    "evidence_ids": [
+      "stderr"
+    ],
+    "missing": "",
+    "next": "Verify correct range-endpoints order for tr command",
+    "possible": "tr command failed due to incorrect range-endpoints order"
+  },
+  "investigation": null,
+  "normalized": {
+    "clean_stderr": "tr: range-endpoints of 'z-a' are in reverse collating sequence order\n\n",
+    "clean_stdout": "",
+    "collapsed_count": 0,
+    "relevant_lines": [
+      "tr: range-endpoints of 'z-a' are in reverse collating sequence order"
+    ]
+  },
+  "remedy": null,
+  "report": {
+    "capture": "captured",
+    "captured_at": 1790505202,
+    "checks": 0,
+    "claims": [
+      {
+        "kind": "observed",
+        "source": {
+          "field": "stderr",
+          "type": "execution"
+        },
+        "text": "tr: range-endpoints of 'z-a' are in reverse collating sequence order"
+      },
+      {
+        "kind": "possible",
+        "source": {
+          "evidence_ids": [
+            "stderr"
+          ],
+          "type": "model"
+        },
+        "text": "May be: tr command failed due to incorrect range-endpoints order"
+      },
+      {
+        "kind": "next",
+        "source": {
+          "type": "suggestion"
+        },
+        "text": "Verify correct range-endpoints order for tr command"
+      }
+    ],
+    "command_label": "tr",
+    "outcome": "1",
+    "reported_at": 1790505238,
+    "source_mode": "explicit",
+    "summary": "Command result: exit code 1."
+  },
+  "schema_version": 1,
+  "status": "Unknown",
+  "summary": "Command result: exit code 1."
+}

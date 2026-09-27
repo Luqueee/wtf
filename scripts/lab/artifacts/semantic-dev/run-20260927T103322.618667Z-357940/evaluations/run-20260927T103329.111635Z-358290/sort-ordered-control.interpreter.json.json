@@ -1,0 +1,45 @@
+{
+  "category": null,
+  "command": "/usr/bin/sort --check input.txt",
+  "detection": null,
+  "duration": {
+    "nanos": 670761,
+    "secs": 0
+  },
+  "entities": {
+    "containers": [],
+    "paths": [],
+    "ports": [],
+    "processes": [
+      "sort"
+    ],
+    "services": []
+  },
+  "evidence": [],
+  "exit_status": {
+    "code": 0,
+    "signal": null
+  },
+  "investigation": null,
+  "normalized": {
+    "clean_stderr": "",
+    "clean_stdout": "",
+    "collapsed_count": 0,
+    "relevant_lines": []
+  },
+  "remedy": null,
+  "report": {
+    "capture": "captured",
+    "captured_at": 1790505202,
+    "checks": 0,
+    "claims": [],
+    "command_label": "sort",
+    "outcome": "0",
+    "reported_at": 1790505241,
+    "source_mode": "explicit",
+    "summary": "Command completed successfully."
+  },
+  "schema_version": 1,
+  "status": "Success",
+  "summary": "Command completed successfully."
+}

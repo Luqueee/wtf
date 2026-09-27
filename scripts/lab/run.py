@@ -397,9 +397,11 @@ def create_run_dir(suite: str) -> Path:
 
 def main() -> int:
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument("--run-reserved", action="store_true", help="run the frozen held-out suite (never enabled by default)")
+    suites = parser.add_mutually_exclusive_group()
+    suites.add_argument("--run-reserved", action="store_true", help="run the frozen held-out suite (never enabled by default)")
+    suites.add_argument("--run-semantic-dev", action="store_true", help="run the sealed semantic development suite")
     options = parser.parse_args()
-    suite = "reserved" if options.run_reserved else "dev"
+    suite = "reserved" if options.run_reserved else "semantic-dev" if options.run_semantic_dev else "dev"
     try:
         manifest_hash, oracle_hash = verify_seal(suite)
         manifest = load_json(LAB_DIR / f"{suite}-manifest.json")

@@ -1,0 +1,3 @@
+?  sort  1
+   RESULT    Command result: exit code 1.
+   OBSERVED  /usr/bin/sort: input.txt:2: disorder: alpha

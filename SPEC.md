@@ -129,6 +129,8 @@ After the adapter/probe and opt-in live-capture cutover, a [fresh six-family sea
 
 A later [development-only prompt comparison](docs/lab.md#rejected-evidence-id-prompt-experiment-development-only) listed allowable evidence IDs explicitly. It eliminated five Granite reference errors on the reused development cases but surfaced a false permission/sudo claim; Phi accepted fewer responses and still made a false claim. That prompt was reverted: making a reference syntactically valid is not evidence that its explanation is true. No model was promoted.
 
+The [sealed semantic development comparison](docs/lab.md#semantic-development-comparison-not-held-out) added four different failure conditions and one success control. On four informative failures Phi produced four reference-valid answers but **zero new supported explanations or discriminating checks, two false causes and two false MISSING claims**. The oracle was authored before source execution, and all five exit statuses matched; this is still a development corpus, not a new family-disjoint promotion test. The unchanged model remains opt-in.
+
 ## 9. Autonomous research focus
 
 The nine-hour development objective is a **generic, output-aware diagnosis path**, not more adapter coverage or better ranking of an adapter's candidates. For any failed executable with captured output, WTF should attempt to explain the specific failure using that output and available safe evidence, with a tentative cause or a discriminating next check when warranted. A changed model score, generic paraphrase of stderr, or a rules-only report is not success. The reported synthetic curl exit-7 case changed no user-facing result with Laya; its scores came from different candidate sets and are not a proof of accuracy.

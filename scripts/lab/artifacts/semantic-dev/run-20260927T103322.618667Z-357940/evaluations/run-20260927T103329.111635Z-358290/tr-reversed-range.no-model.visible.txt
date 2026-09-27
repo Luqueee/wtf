@@ -1,0 +1,3 @@
+?  tr  1
+   RESULT    Command result: exit code 1.
+   OBSERVED  tr: range-endpoints of 'z-a' are in reverse collating sequence order

@@ -1,0 +1,42 @@
+{
+  "schema_version": 1,
+  "suite": "semantic-dev",
+  "authority": "Pre-authored fixture bytes and documented command semantics; neither stderr nor model output establishes the historical cause.",
+  "cases": {
+    "sort-disordered-input": {
+      "expected_exit_code": 1,
+      "expected_signal": null,
+      "established_truth": "The second line alpha precedes zeta in the C locale, so the existing input violates the requested ordering check.",
+      "evidence_basis": "The fixture writes exactly zeta then alpha and fixes LC_ALL=C before invoking sort --check.",
+      "not_established": "No inference about files outside the case directory."
+    },
+    "sha256sum-wrong-digest": {
+      "expected_exit_code": 1,
+      "expected_signal": null,
+      "established_truth": "The checksum manifest assigns an all-zero SHA-256 digest to nonempty known data, so the existing input cannot match the stated digest.",
+      "evidence_basis": "The fixture writes the literal manifest digest and known data in the same private directory before one verification.",
+      "not_established": "A mismatch does not prove that either file was modified after the digest was recorded."
+    },
+    "iconv-unrepresentable-character": {
+      "expected_exit_code": 1,
+      "expected_signal": null,
+      "established_truth": "The valid UTF-8 input contains U+00E9, which ASCII cannot encode; conversion to ASCII cannot represent that character.",
+      "evidence_basis": "The fixture writes café as UTF-8 and requests UTF-8 to ASCII conversion with both encodings explicitly named.",
+      "not_established": "The input is not malformed UTF-8 and no external file permissions were changed."
+    },
+    "tr-reversed-range": {
+      "expected_exit_code": 1,
+      "expected_signal": null,
+      "established_truth": "The requested z-a character range has endpoints in reverse C-locale order and is rejected before any stdin processing.",
+      "evidence_basis": "The fixed argv contains literal z-a and a-z while the process runs with LC_ALL=C and closed stdin.",
+      "not_established": "No assertion about input data, which is empty."
+    },
+    "sort-ordered-control": {
+      "expected_exit_code": 0,
+      "expected_signal": null,
+      "established_truth": "The fixture's alpha then zeta lines are in C-locale ascending order, so the check succeeds without output.",
+      "evidence_basis": "The fixture writes both lines before running sort --check with LC_ALL=C.",
+      "not_established": "No model diagnosis is needed for this success."
+    }
+  }
+}

@@ -1,0 +1,58 @@
+{
+  "schema_version": 1,
+  "suite": "semantic-dev",
+  "capture_limit_bytes_per_stream": 4096,
+  "resource_limits": {
+    "cpu_seconds_soft": 3,
+    "cpu_seconds_hard": 4,
+    "address_space_bytes": 536870912,
+    "file_size_bytes": 8388608,
+    "open_files": 64,
+    "core_dumps": 0
+  },
+  "cases": [
+    {
+      "id": "sort-disordered-input",
+      "family": "ordering-check",
+      "program": "sort",
+      "args": ["--check", "input.txt"],
+      "timeout_seconds": 3.0,
+      "setup": [{"op": "write_text", "path": "input.txt", "content": "zeta\nalpha\n"}]
+    },
+    {
+      "id": "sha256sum-wrong-digest",
+      "family": "checksum-verification",
+      "program": "sha256sum",
+      "args": ["--check", "checksums.txt"],
+      "timeout_seconds": 3.0,
+      "setup": [
+        {"op": "write_text", "path": "input.txt", "content": "known data\n"},
+        {"op": "write_text", "path": "checksums.txt", "content": "0000000000000000000000000000000000000000000000000000000000000000  input.txt\n"}
+      ]
+    },
+    {
+      "id": "iconv-unrepresentable-character",
+      "family": "charset-conversion",
+      "program": "iconv",
+      "args": ["--from-code=UTF-8", "--to-code=ASCII", "input.txt"],
+      "timeout_seconds": 3.0,
+      "setup": [{"op": "write_text", "path": "input.txt", "content": "café\n"}]
+    },
+    {
+      "id": "tr-reversed-range",
+      "family": "character-range-parse",
+      "program": "tr",
+      "args": ["z-a", "a-z"],
+      "timeout_seconds": 3.0,
+      "setup": []
+    },
+    {
+      "id": "sort-ordered-control",
+      "family": "ordering-check",
+      "program": "sort",
+      "args": ["--check", "input.txt"],
+      "timeout_seconds": 3.0,
+      "setup": [{"op": "write_text", "path": "input.txt", "content": "alpha\nzeta\n"}]
+    }
+  ]
+}

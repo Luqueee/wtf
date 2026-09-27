@@ -1,0 +1,60 @@
+{
+  "category": "unknown",
+  "command": "/usr/bin/sort --check input.txt",
+  "detection": null,
+  "duration": {
+    "nanos": 1408891,
+    "secs": 0
+  },
+  "entities": {
+    "containers": [],
+    "paths": [
+      "/usr/bin/sort"
+    ],
+    "ports": [],
+    "processes": [
+      "sort"
+    ],
+    "services": []
+  },
+  "evidence": [
+    "/usr/bin/sort: input.txt:2: disorder: alpha"
+  ],
+  "exit_status": {
+    "code": 1,
+    "signal": null
+  },
+  "investigation": null,
+  "normalized": {
+    "clean_stderr": "/usr/bin/sort: input.txt:2: disorder: alpha\n\n",
+    "clean_stdout": "",
+    "collapsed_count": 0,
+    "relevant_lines": [
+      "/usr/bin/sort: input.txt:2: disorder: alpha"
+    ]
+  },
+  "remedy": null,
+  "report": {
+    "capture": "captured",
+    "captured_at": 1790505202,
+    "checks": 0,
+    "claims": [
+      {
+        "kind": "observed",
+        "source": {
+          "field": "stderr",
+          "type": "execution"
+        },
+        "text": "/usr/bin/sort: input.txt:2: disorder: alpha"
+      }
+    ],
+    "command_label": "sort",
+    "outcome": "1",
+    "reported_at": 1790505209,
+    "source_mode": "explicit",
+    "summary": "Command result: exit code 1."
+  },
+  "schema_version": 1,
+  "status": "Unknown",
+  "summary": "Command result: exit code 1."
+}

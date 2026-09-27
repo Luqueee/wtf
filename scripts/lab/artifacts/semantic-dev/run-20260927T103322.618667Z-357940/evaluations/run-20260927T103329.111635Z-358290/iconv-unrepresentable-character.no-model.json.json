@@ -1,0 +1,60 @@
+{
+  "category": "unknown",
+  "command": "/usr/bin/iconv --from-code=UTF-8 --to-code=ASCII input.txt",
+  "detection": null,
+  "duration": {
+    "nanos": 2352301,
+    "secs": 0
+  },
+  "entities": {
+    "containers": [],
+    "paths": [
+      "/usr/bin/iconv"
+    ],
+    "ports": [],
+    "processes": [
+      "iconv"
+    ],
+    "services": []
+  },
+  "evidence": [
+    "/usr/bin/iconv: illegal input sequence at position 3"
+  ],
+  "exit_status": {
+    "code": 1,
+    "signal": null
+  },
+  "investigation": null,
+  "normalized": {
+    "clean_stderr": "/usr/bin/iconv: illegal input sequence at position 3\n\n",
+    "clean_stdout": "caf",
+    "collapsed_count": 0,
+    "relevant_lines": [
+      "/usr/bin/iconv: illegal input sequence at position 3"
+    ]
+  },
+  "remedy": null,
+  "report": {
+    "capture": "captured",
+    "captured_at": 1790505202,
+    "checks": 0,
+    "claims": [
+      {
+        "kind": "observed",
+        "source": {
+          "field": "stderr",
+          "type": "execution"
+        },
+        "text": "/usr/bin/iconv: illegal input sequence at position 3"
+      }
+    ],
+    "command_label": "iconv",
+    "outcome": "1",
+    "reported_at": 1790505225,
+    "source_mode": "explicit",
+    "summary": "Command result: exit code 1."
+  },
+  "schema_version": 1,
+  "status": "Unknown",
+  "summary": "Command result: exit code 1."
+}
